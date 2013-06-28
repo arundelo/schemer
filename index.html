@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Schemer</title>
+<script src="schemer.js"></script>
+<script type="text/javascript">window.onload = main;</script>
+<!-- <meta name="viewport" content="width=320"> -->
+<!-- <link rel="stylesheet" type="text/css" href="foo.css"> -->
+<!--
+<style type="text/css">
+</style>
+-->
+</head>
+
+<body>
+<label for="input"><div>input</div></label>
+<textarea id="input" rows="20" cols="80">
+(foo) (bar) ((()))
+
+(foo
+  ((bar 'baz)) ; Comment
+  quux '(quuux quuuux) ()
+  ;
+
+  ; Another comment with a paren: )
+  42)
+
+(foo ((bar (quote baz))) quux (quote (quuux quuuux)) () 42)
+
+(9007199254740992
+  000.000 ; A symbol, not a number.
+  1e+21) ; A symbol, not a number.
+
+; Intentional errors:
+)
+9007199254740993
+(
+</textarea>
+
+<p>
+<button id="button" type="button" title="Shift+Enter">read and print</button>
+</p>
+
+<label for="output"><div>output</div></label>
+<textarea id="output" rows="20" cols="80">
+</textarea>
+</body>
+</html>
