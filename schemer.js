@@ -251,12 +251,13 @@ var lengthbetween = function(l, min, max) {
 };
 
 var eval = function(expr, env, cont) {
+    console.log(expr.toString());
     if (isselfevaluating(expr)) {
         return expr;
     } else if (expr instanceof Pair) {
         if (expr.car == "quote") {
             if (lengthbetween(expr, 2, 2)) {
-                return expr.cdr.cdr;
+                return expr.cdr.car;
             } else {
                 throw "quote must take exactly one argument. " + expr;
             }
@@ -318,10 +319,11 @@ Env.prototype.set = function(name, val) {
 window.main = function() {
     var inputtextarea = document.getElementById("input"),
         outputtextarea = document.getElementById("output"),
-        button = document.getElementById("button"),
         listener;
 
     listener = function(ev) {
+        var tokenizer, loop, sep, expr, val, e;
+
         if (ev.type == "keydown" && ev.keyCode == KEYCODEENTER && ev.shiftKey
                 && !(ev.altGraphKey || ev.altKey || ev.ctrlKey || ev.metaKey)
             || ev.type == "click" && ev.target.id == "button"
@@ -332,28 +334,29 @@ window.main = function() {
             return; // WE ARE NOT INTERESTED IN THIS EVENT.
         }
 
-        var tokenizer = new Tokenizer(inputtextarea.value),
-            sep = "",
-            loop = true,
-            val,
-            e;
-
+        tokenizer = new Tokenizer(inputtextarea.value);
         outputtextarea.value = "";
+        loop = true;
+        sep = "";
 
         while (loop) {
             try {
-                val = read(tokenizer);
+                expr = read(tokenizer);
+                if (expr === EOF) {
+                    val = undefined;
+                    loop = false;
+                } else {
+                    val = eval(expr);
+                }
             } catch (e) {
                 loop = false;
                 val = e;
             }
 
-            if (val === EOF) {
-                loop = false;
+            if (val !== undefined) {
+                outputtextarea.value += sep + val;
+                sep = "\n\n";
             }
-
-            outputtextarea.value += sep + val;
-            sep = "\n\n";
         }
     };
 
