@@ -217,6 +217,17 @@ var read = function(tokenizer) {
     }
 };
 
+var Closure = function(lambdaexpr, env) {
+    this.formals = lambdaexpr.cdr.car;
+
+    if (this.formals !== EMPTYLIST && !(this.formals instanceof Pair)) {
+        throw "lambda's second argument must be a list, not " + formals;
+    }
+
+    this.body = lambdaexpr.cdr.cdr.car;
+    this.env = env;
+};
+
 var isatom = function(x) {
     return x !== EMPTYLIST && !(x instanceof Pair);
 };
@@ -287,6 +298,14 @@ var eval = function(expr, env, cont) {
             } else {
                 throw "if must take exactly three arguments. " + expr;
             }
+        } else if (expr.car == "lambda") {
+            if (lengthbetween(expr, 3, 3)) {
+                return function() {
+                    return cont(new Closure(expr, env));
+                };
+            } else {
+                throw "lambda must take exactly three arguments. " + expr;
+            }
         } else {
             return function() {
                 var evalargs = function(fn) {
@@ -348,6 +367,26 @@ var apply = function(fn, args, cont) {
         } else {
             throw "+ must take exactly two arguments";
         }
+    } else if (fn instanceof Closure) {
+        console.log("(apply " + fn + " " + args + ")");
+        var formals = fn.formals,
+            applymap = {};
+
+        while (formals !== EMPTYLIST && args !== EMPTYLIST) {
+            applymap[formals.car] = args.car;
+            formals = formals.cdr;
+            args = args.cdr;
+        }
+
+        if (args !== EMPTYLIST) {
+            throw "Not enough arguments";
+        } else if (formals !== EMPTYLIST) {
+            throw "Too many arguments";
+        }
+
+        return function() {
+            return eval(fn.body, new Env(applymap, fn.env), cont);
+        };
     } else {
         throw "I don't know how to apply " + fn;
     }
