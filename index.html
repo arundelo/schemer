@@ -15,17 +15,13 @@
 <body>
 <label for="input"><div>input</div></label>
 <textarea id="input" rows="20" cols="80">
-1
+(if 'foo
+  (+ (+ 1 2) (+ 3 4))
+  (notreached blib))
 
-(+ 2 '2)
-
-(+ (+ 2 2) (+ 2 2))
-
-'(#t #f (foo (bar) () (baz)) ''quote)
-
-()
-
-'()
+(if #f
+  (notreached blab)
+  (+ (+ 1 2) (+ 3 4)))
 </textarea>
 
 <p>

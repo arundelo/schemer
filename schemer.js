@@ -268,6 +268,25 @@ var eval = function(expr, env, cont) {
             } else {
                 throw "quote must take exactly one argument. " + expr;
             }
+        } else if (expr.car == "if") {
+            if (lengthbetween(expr, 4, 4)) {
+                var condexpr = expr.cdr.car,
+                    thenexpr = expr.cdr.cdr.car,
+                    elseexpr = expr.cdr.cdr.cdr.car;
+                return function() {
+                    var ifcont = function(condresult) {
+                        if (condresult === "#f") {
+                            return eval(elseexpr, env, cont);
+                        } else {
+                            return eval(thenexpr, env, cont);
+                        }
+                    };
+
+                    return eval(condexpr, env, ifcont);
+                };
+            } else {
+                throw "if must take exactly three arguments. " + expr;
+            }
         } else {
             return function() {
                 var evalargs = function(fn) {
@@ -311,6 +330,8 @@ var evlis = function(exprs, env, cont) {
     }
 };
 
+// Applies a function (already evaluated) to a list of arguments; returns a
+// thunk that calls the given continuation with the results:
 var apply = function(fn, args, cont) {
     if (fn === "+") {
         if (lengthbetween(args, 2, 2)) {
