@@ -27,6 +27,14 @@
    (+ a (+ b c)))
  1 2 3)
 
+((lambda (f a)
+   (f))
+ ((lambda (a)
+    (lambda ()
+      a))
+  'lexical)
+ 'dynamic)
+
 intentionalerror
 </textarea>
 
