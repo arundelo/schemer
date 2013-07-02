@@ -304,7 +304,7 @@ var eval = function(expr, env, cont) {
                     return cont(new Closure(expr, env));
                 };
             } else {
-                throw "lambda must take exactly three arguments. " + expr;
+                throw "lambda must take exactly two arguments. " + expr;
             }
         } else {
             return function() {
