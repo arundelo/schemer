@@ -16,16 +16,10 @@
 <label for="input"><div>input</div></label>
 <textarea id="input" rows="20" cols="80">
 (if 'foo
-  (+ (+ 1 2) (+ 3 4))
+  (if #f
+    (notreached blab)
+    (+ (+ 1 2) (+ 3 4)))
   (notreached blib))
-
-(if #f
-  (notreached blab)
-  (+ (+ 1 2) (+ 3 4)))
-
-((lambda (a b c)
-   (+ a (+ b c)))
- 1 2 3)
 
 ((lambda (f a)
    (f))
@@ -34,6 +28,12 @@
       a))
   'lexical)
  'dynamic)
+
+(+
+  (letcc cc
+         ((lambda ()
+            (cc 2))))
+  2)
 
 intentionalerror
 </textarea>

@@ -306,6 +306,20 @@ var eval = function(expr, env, cont) {
             } else {
                 throw "lambda must take exactly two arguments. " + expr;
             }
+        } else if (expr.car == "letcc") {
+            if (lengthbetween(expr, 3, 3)) {
+                var ccname = expr.cdr.car,
+                    body = expr.cdr.cdr.car,
+                    letccmap = {};
+
+                letccmap[ccname] = cont;
+
+                return function() {
+                    return eval(body, new Env(letccmap, env), cont);
+                };
+            } else {
+                throw "letcc must take exactly two arguments. " + expr;
+            }
         } else {
             return function() {
                 var evalargs = function(fn) {
@@ -387,6 +401,15 @@ var apply = function(fn, args, cont) {
         return function() {
             return eval(fn.body, new Env(applymap, fn.env), cont);
         };
+    } else if (typeof fn == "function") {
+        // A continuation from letcc.
+        if (lengthbetween(args, 1, 1)) {
+            return function() {
+                return fn(args.car);
+            };
+        } else {
+            throw "A continuation must have exactly one argument";
+        }
     } else {
         throw "I don't know how to apply " + fn;
     }
