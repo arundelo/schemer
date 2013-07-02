@@ -250,35 +250,87 @@ var lengthbetween = function(l, min, max) {
     }
 };
 
+// Takes a lisp expression, an environment, and a continuation; returns a thunk
+// that when called evaluates the expression, passes the value to the
+// continuation, and returns whatever the continuation returns:
 var eval = function(expr, env, cont) {
-    console.log(expr.toString());
+    console.log("eval: " + expr);
     if (isselfevaluating(expr)) {
-        return expr;
+        return function() {
+            return cont(expr);
+        };
     } else if (expr instanceof Pair) {
         if (expr.car == "quote") {
             if (lengthbetween(expr, 2, 2)) {
-                return expr.cdr.car;
+                return function() {
+                    return cont(expr.cdr.car);
+                };
             } else {
                 throw "quote must take exactly one argument. " + expr;
             }
-        } else if (expr.car == "+") {
-            if (lengthbetween(expr, 3, 3)) {
-                var a = eval(expr.cdr.car, env, cont);
-                var b = eval(expr.cdr.cdr.car, env, cont);
-                if (typeof a == "number" && typeof b == "number") {
-                    return a + b;
-                } else {
-                    throw "+ must take numeric arguments. " + expr;
-                }
+        } else {
+            return function() {
+                var evalargs = function(fn) {
+                    var applyfntoargs = function(args) {
+                        return apply(fn, args, cont);
+                    };
+
+                    return evlis(expr.cdr, env, applyfntoargs);
+                };
+
+                return eval(expr.car, env, evalargs);
+            };
+        }
+    } else if (typeof expr == "string") {
+        return function() {
+            return cont(env.get(expr));
+        };
+    } else {
+        throw "I don't know how to evaluate " + expr;
+    }
+};
+
+// Like eval, but evaluates a list of expressions:
+var evlis = function(exprs, env, cont) {
+    if (exprs === EMPTYLIST) {
+        return function() {
+            return cont(EMPTYLIST);
+        };
+    } else {
+        return function() {
+            var evalrest = function(evaledfirst) {
+                var consfirstonrest = function(evaledrest) {
+                    return cont(new Pair(evaledfirst, evaledrest));
+                };
+
+                return evlis(exprs.cdr, env, consfirstonrest);
+            };
+
+            return eval(exprs.car, env, evalrest);
+        };
+    }
+};
+
+var apply = function(fn, args, cont) {
+    if (fn === "+") {
+        if (lengthbetween(args, 2, 2)) {
+            var a = args.car,
+                b = args.cdr.car;
+
+            if (typeof a == "number" && typeof b == "number") {
+                return function() {
+                    return cont(a + b);
+                };
             } else {
-                throw "+ must take exactly two arguments. " + expr;
+                throw "+ must take numeric arguments";
             }
         } else {
-            throw "I don't understand " + expr.car;
+            throw "+ must take exactly two arguments";
         }
     } else {
-        throw "I don't understand " + expr;
+        throw "I don't know how to apply " + fn;
     }
+
 };
 
 var Env = function(map, parentenv) {
@@ -338,6 +390,7 @@ window.main = function() {
         outputtextarea.value = "";
         loop = true;
         sep = "";
+        env = new Env({"+": "+"});
 
         while (loop) {
             try {
@@ -346,7 +399,16 @@ window.main = function() {
                     val = undefined;
                     loop = false;
                 } else {
-                    val = eval(expr);
+                    // Trampoline:
+                    var thunk = function() {
+                        return eval(expr, env, function(val) {return val;});
+                    };
+
+                    while (typeof thunk == "function") {
+                        thunk = thunk();
+                    }
+
+                    val = thunk;
                 }
             } catch (e) {
                 loop = false;
