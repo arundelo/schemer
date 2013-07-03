@@ -29,10 +29,16 @@
   'lexical)
  'dynamic)
 
+(cons 'foo (cons 'bar ()))
+(car (cons 'foo (cons 'bar ())))
+(cdr (list 'foo 'bar))
+
 (+
-  (letcc cc
-         ((lambda ()
-            (cc 2))))
+  (letcc outercc
+         (cons
+           'foo
+           (letcc innercc
+                  (outercc 2))))
   2)
 
 intentionalerror

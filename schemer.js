@@ -228,6 +228,40 @@ var Closure = function(lambdaexpr, env) {
     this.env = env;
 };
 
+// Built-in functions.  These all take a single JavaScript argument that is a
+// list of their (already evaluated) lisp arguments.
+var builtins = {
+    "+": function plus(args) {
+        if (args === EMPTYLIST) {
+            return 0;
+        } else {
+            return args.car + plus(args.cdr);
+        }
+    },
+    list: function list(args) {
+        return args;
+    },
+    cons: function cons(args) {
+        // FIXME:  These built-in functions should check how many arguments
+        // they have and that they're the right types.
+        return new Pair(args.car, args.cdr.car);
+    },
+    car: function car(args) {
+        return args.car.car;
+    },
+    cdr: function cdr(args) {
+        return args.car.cdr;
+    },
+    "eq?": function eq(args) {
+        // FIXME:  In The Little Schemer it's undefined to ask eq? about lists
+        // or numbers.
+        return args.car === args.cdr.car ? "#t" : "#f";
+    },
+    "null?": function nullp(args) {
+        return args.car === EMPTYLIST ? "#t" : "#f";
+    }
+};
+
 var isatom = function(x) {
     return x !== EMPTYLIST && !(x instanceof Pair);
 };
@@ -312,7 +346,15 @@ var eval = function(expr, env, cont) {
                     body = expr.cdr.cdr.car,
                     letccmap = {};
 
-                letccmap[ccname] = cont;
+                // apply uses the name "cc" to know that it can throw away its
+                // continuation.
+                letccmap[ccname] = function cc(args) {
+                    if (lengthbetween(args, 1, 1)) {
+                        return cont(args.car);
+                    } else {
+                        throw "A continuation must have exactly one argument";
+                    }
+                };
 
                 return function() {
                     return eval(body, new Env(letccmap, env), cont);
@@ -366,22 +408,7 @@ var evlis = function(exprs, env, cont) {
 // Applies a function (already evaluated) to a list of arguments; returns a
 // thunk that calls the given continuation with the results:
 var apply = function(fn, args, cont) {
-    if (fn === "+") {
-        if (lengthbetween(args, 2, 2)) {
-            var a = args.car,
-                b = args.cdr.car;
-
-            if (typeof a == "number" && typeof b == "number") {
-                return function() {
-                    return cont(a + b);
-                };
-            } else {
-                throw "+ must take numeric arguments";
-            }
-        } else {
-            throw "+ must take exactly two arguments";
-        }
-    } else if (fn instanceof Closure) {
+    if (fn instanceof Closure) {
         console.log("(apply " + fn + " " + args + ")");
         var formals = fn.formals,
             applymap = {};
@@ -402,13 +429,16 @@ var apply = function(fn, args, cont) {
             return eval(fn.body, new Env(applymap, fn.env), cont);
         };
     } else if (typeof fn == "function") {
-        // A continuation from letcc.
-        if (lengthbetween(args, 1, 1)) {
+        if (fn.name === "cc") {
+            // A continuation from letcc.
             return function() {
-                return fn(args.car);
+                return fn(args);
             };
         } else {
-            throw "A continuation must have exactly one argument";
+            // A built-in function.
+            return function() {
+                return cont(fn(args));
+            };
         }
     } else {
         throw "I don't know how to apply " + fn;
@@ -473,7 +503,7 @@ window.main = function() {
         outputtextarea.value = "";
         loop = true;
         sep = "";
-        env = new Env({"+": "+"});
+        env = new Env(builtins);
 
         while (loop) {
             try {
