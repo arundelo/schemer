@@ -15,6 +15,18 @@
 <body>
 <label for="input"><div>input</div></label>
 <textarea id="input" rows="20" cols="80">
+((lambda (a b)
+   (list
+     ((lambda (b c)
+        (begin
+          (set! a 'out)
+          (set! b 'in)
+          (set! c 'in)
+          (list 'inside a b c)))
+      'inbefore 'inbefore)
+     (list 'outside a b)))
+ 'outbefore 'outbefore)
+
 ; Returns the sum of natural numbers up to n:
 (define sigma
   (lambda (n)
@@ -22,29 +34,31 @@
       0
       (+ n (sigma (+ n -1))))))
 
-(+ 1 2 3 4 5 6 7 8 9 10)
 (car (cdr (list 'blub (sigma 10) 'blub)))
 
-((lambda (a b c)
+(define jump42
+  (lambda (l cont)
+    (if (null? l)
+      #f
+      (if (eq? 42 (car l))
+        (cont 42)
+        (jump42 (cdr l) cont)))))
+
+(letcc cc (jump42 '(1 2 3 42 43) cc))
+
+((lambda (n outercont)
    (begin
-     (set! a 'a-after)
-     (set! b 'b-after)
-     (set! c 'c-after)
-     (list a b c)))
- 'a-before 'b-before 'c-before)
-
-(list
-  4
-  'is
-  (+
-    (letcc outercc
-           (cons
-             'foo
-             (letcc innercc
-                    (outercc 2))))
-    2))
-
-intentionalerror
+     ; Grab a continuation and give it a name in a containing scope:
+     (letcc innercont
+            (set! outercont innercont))
+     ;(alert 'letcc 'just 'returned 'and 'n 'is n)
+     (set! n (+ 1 n))
+     (if (eq? n 10)
+       n
+       ; Call the continuation again so letcc will return again, after
+       ; which n will be incremented again:
+       (outercont #f))))
+ 0 #f)
 </textarea>
 
 <p>

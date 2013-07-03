@@ -259,6 +259,10 @@ var builtins = {
     },
     "null?": function nullp(args) {
         return args.car === EMPTYLIST ? "#t" : "#f";
+    },
+    alert: function alert(args) {
+        window.alert(args);
+        return args;
     }
 };
 
@@ -382,7 +386,6 @@ var operators = {
 
             return function() {
                 var assign = function(val) {
-                    console.log("setting " + name + " to " + val);
                     env.globalenv.map[name] = val;
                     return cont("define");
                 };
@@ -399,20 +402,23 @@ var operators = {
             throw "begin needs at least one argument";
         }
 
-        return function() {
-            var evalrest = function evalrest(evaled) {
-                if (args.cdr === EMPTYLIST) {
-                    // We are at the end; return the last value.
-                    return cont(evaled);
+        var beginhelper = function beginhelper(args) {
+            return function() {
+                if (args.cdr == EMPTYLIST) {
+                    // We are at the end; eval and return the last value.
+                    return eval(args.car, env, cont);
                 } else {
                     // cdr down the list.
-                    args = args.cdr;
-                    return eval(args.car, env, evalrest);
+                    var begincont = function(ignored) {
+                            return beginhelper(args.cdr);
+                    };
+
+                    return eval(args.car, env, begincont);
                 }
             };
-
-            return eval(args.car, env, evalrest);
         };
+
+        return beginhelper(args);
     },
 
     "set!": function(args, env, cont) {
@@ -448,7 +454,6 @@ var operators = {
 // that when called evaluates the expression, passes the value to the
 // continuation, and returns whatever the continuation returns:
 var eval = function(expr, env, cont) {
-    console.log("eval: " + expr);
     if (isselfevaluating(expr)) {
         return function() {
             return cont(expr);
@@ -506,7 +511,6 @@ var evlis = function(exprs, env, cont) {
 // thunk that calls the given continuation with the results:
 var apply = function(fn, args, cont) {
     if (fn instanceof Closure) {
-        console.log("(apply " + fn + " " + args + ")");
         var formals = fn.formals,
             applymap = {};
 
@@ -550,7 +554,7 @@ var Env = function(map, parentenv) {
         // parentenv is the innermost environment this environment inherits
         // from.  globalenv is the outermost.
         this.parentenv = parentenv;
-        this.globalenv
+        this.globalenv = parentenv.globalenv;
     } else {
         // We're not inheriting from anything, so we are the global
         // environment.
@@ -576,6 +580,8 @@ Env.prototype.isset = function(name) {
 Env.prototype.set = function(name, val) {
     if (this.map.hasOwnProperty(name)) {
         this.map[name] = val;
+    } else if (this.parentenv) {
+        this.parentenv.set(name, val);
     } else {
         // The variable doesn't already exist in this environment so create it
         // in the global one:
