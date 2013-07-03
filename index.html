@@ -15,6 +15,21 @@
 <body>
 <label for="input"><div>input</div></label>
 <textarea id="input" rows="20" cols="80">
+(define multirember
+  (lambda (a lat)
+    (if (null? lat)
+      '()
+      (if (eq? a (car lat))
+        (multirember a (cdr lat))
+        (cons (car lat)
+              (multirember
+                a (cdr
+                    lat)))))))
+
+(list
+  (multirember 'foo '(foo foo bar baz foo foo quux quuux))
+  (multirember 'foo '(bar baz foo foo quux quuux foo foo)))
+
 ((lambda (a b)
    (list
      ((lambda (b c)

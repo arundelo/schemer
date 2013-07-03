@@ -228,42 +228,65 @@ var Closure = function(lambdacdr, env) {
     this.env = env;
 };
 
+Closure.prototype.toString = function() {
+    return "#closure";
+};
+
 // Built-in functions.  These all take a single JavaScript argument that is a
 // list of their (already evaluated) lisp arguments.
 var builtins = {
-    "+": function plus(args) {
+    "+": function builtin_plus(args) {
         if (args === EMPTYLIST) {
             return 0;
         } else {
-            return args.car + plus(args.cdr);
+            return args.car + builtin_plus(args.cdr);
         }
     },
-    list: function list(args) {
+
+    list: function builtin_list(args) {
         return args;
     },
-    cons: function cons(args) {
+
+    cons: function builtin_cons(args) {
         // FIXME:  These built-in functions should check how many arguments
         // they have and that they're the right types.
         return new Pair(args.car, args.cdr.car);
     },
-    car: function car(args) {
+
+    car: function builtin_car(args) {
         return args.car.car;
     },
-    cdr: function cdr(args) {
+
+    cdr: function builtin_cdr(args) {
         return args.car.cdr;
     },
-    "eq?": function eq(args) {
+
+    "eq?": function builtin_eq(args) {
         // FIXME:  In The Little Schemer it's undefined to ask eq? about lists
         // or numbers.
         return args.car === args.cdr.car ? "#t" : "#f";
     },
-    "null?": function nullp(args) {
+
+    "null?": function builtin_nullp(args) {
         return args.car === EMPTYLIST ? "#t" : "#f";
     },
-    alert: function alert(args) {
+
+    alert: function builtin_alert(args) {
         window.alert(args);
         return args;
     }
+};
+
+// A custom toString method for built-in functions and continuations:
+var functioncustomtostring = function() {
+    return "#" + this.name;
+};
+
+// Give the built-in functions their toString method:
+for (var lispname in builtins) {
+    if (builtins.hasOwnProperty(lispname)) {
+        builtins[lispname].toString = functioncustomtostring;;
+    };
 };
 
 var isatom = function(x) {
@@ -358,13 +381,15 @@ var operators = {
 
             // apply uses the name "cc" to know that it can throw away its
             // continuation.
-            letccmap[ccname] = function cc(ccargs) {
+            letccmap[ccname] = function continuation(ccargs) {
                 if (lengthbetween(ccargs, 1, 1)) {
                     return cont(ccargs.car);
                 } else {
                     throw "A continuation must have exactly one argument";
                 }
             };
+
+            letccmap[ccname].toString = functioncustomtostring;
 
             return function() {
                 return eval(body, new Env(letccmap, env), cont);
@@ -387,7 +412,7 @@ var operators = {
             return function() {
                 var assign = function(val) {
                     env.globalenv.map[name] = val;
-                    return cont("define");
+                    return cont(val);
                 };
 
                 return eval(valexpr, env, assign);
@@ -613,6 +638,15 @@ window.main = function() {
         sep = "";
         env = new Env(builtins);
 
+        // As far as the trampoline is concerned, a thunk is any function that
+        // isn't a lisp continuation or lisp built-in function:
+        var isthunk = function(x) {
+            return typeof thunk == "function" &&
+                (!thunk.name ||
+                    thunk.name != "continuation" &&
+                    thunk.name.search(/^builtin_/) == -1);
+        };
+
         while (loop) {
             try {
                 expr = read(tokenizer);
@@ -625,15 +659,15 @@ window.main = function() {
                         return eval(expr, env, function(val) {return val;});
                     };
 
-                    while (typeof thunk == "function") {
+                    while (isthunk(thunk)) {
                         thunk = thunk();
                     }
 
-                    val = thunk;
+                    val = thunk.toString();
                 }
             } catch (e) {
                 loop = false;
-                val = e;
+                val = (e.stack || e).toString();
             }
 
             if (val !== undefined) {
