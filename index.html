@@ -15,31 +15,26 @@
 <body>
 <label for="input"><div>input</div></label>
 <textarea id="input" rows="20" cols="80">
-(if 'foo
-  (if #f
-    (notreached blab)
-    (+ (+ 1 2) (+ 3 4)))
-  (notreached blib))
+; Returns the sum of natural numbers up to n:
+(define sigma
+  (lambda (n)
+    (if (eq? n 0)
+      0
+      (+ n (sigma (+ n -1))))))
 
-((lambda (f a)
-   (f))
- ((lambda (a)
-    (lambda ()
-      a))
-  'lexical)
- 'dynamic)
+(+ 1 2 3 4 5 6 7 8 9 10)
+(car (cdr (list 'blub (sigma 10) 'blub)))
 
-(cons 'foo (cons 'bar ()))
-(car (cons 'foo (cons 'bar ())))
-(cdr (list 'foo 'bar))
-
-(+
-  (letcc outercc
-         (cons
-           'foo
-           (letcc innercc
-                  (outercc 2))))
-  2)
+(list
+  4
+  'is
+  (+
+    (letcc outercc
+           (cons
+             'foo
+             (letcc innercc
+                    (outercc 2))))
+    2))
 
 intentionalerror
 </textarea>

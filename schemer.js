@@ -362,6 +362,28 @@ var eval = function(expr, env, cont) {
             } else {
                 throw "letcc must take exactly two arguments. " + expr;
             }
+        } else if (expr.car == "define") {
+            if (lengthbetween(expr, 3, 3)) {
+                var name = expr.cdr.car,
+                    valexpr = expr.cdr.cdr.car;
+
+                if (typeof name != "string") {
+                    throw "define's first argument must be a name, not " +
+                        name;
+                }
+
+                return function() {
+                    var assign = function(val) {
+                        console.log("setting " + name + " to " + val);
+                        env.globalenv.map[name] = val;
+                        return cont("define");
+                    };
+
+                    return eval(valexpr, env, assign);
+                };
+            } else {
+                throw "define must have exactly one argument";
+            }
         } else {
             return function() {
                 var evalargs = function(fn) {
