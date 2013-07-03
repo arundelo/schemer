@@ -1,3 +1,6 @@
+// A lisp implementation inspired by the one used in The Little Schemer and The
+// Seasoned Schemer.
+
 (function() {
 
 // Some constants:
