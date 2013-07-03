@@ -25,6 +25,14 @@
 (+ 1 2 3 4 5 6 7 8 9 10)
 (car (cdr (list 'blub (sigma 10) 'blub)))
 
+((lambda (a b c)
+   (begin
+     (set! a 'a-after)
+     (set! b 'b-after)
+     (set! c 'c-after)
+     (list a b c)))
+ 'a-before 'b-before 'c-before)
+
 (list
   4
   'is

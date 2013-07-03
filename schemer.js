@@ -393,6 +393,55 @@ var operators = {
             throw "define must have exactly two arguments";
         }
     },
+
+    begin: function(args, env, cont) {
+        if (args === EMPTYLIST) {
+            throw "begin needs at least one argument";
+        }
+
+        return function() {
+            var evalrest = function evalrest(evaled) {
+                if (args.cdr === EMPTYLIST) {
+                    // We are at the end; return the last value.
+                    return cont(evaled);
+                } else {
+                    // cdr down the list.
+                    args = args.cdr;
+                    return eval(args.car, env, evalrest);
+                }
+            };
+
+            return eval(args.car, env, evalrest);
+        };
+    },
+
+    "set!": function(args, env, cont) {
+        var argsarr = listtoarray(args);
+
+        if (argsarr.length != 2) {
+            throw "set! needs exactly two arguments";
+        }
+
+        var name = argsarr[0],
+            valexpr = argsarr[1];
+
+        if (typeof name != "string") {
+            throw "set!'s first argument must be an identifier";
+        }
+
+        if (env.isset(name)) {
+            return function() {
+                var assign = function(val) {
+                    env.set(name, val);
+                    return cont(val);
+                };
+
+                return eval(valexpr, env, assign);
+            };
+        } else {
+            throw "Cannot set! " + name + " -- not defined or not in scope";
+        }
+    }
 };
 
 // Takes a lisp expression, an environment, and a continuation; returns a thunk
@@ -517,6 +566,11 @@ Env.prototype.get = function(name) {
     } else {
         throw "\"" + name + "\" is undefined";
     }
+};
+
+Env.prototype.isset = function(name) {
+    return this.map.hasOwnProperty(name)
+      || this.parentenv && this.parentenv.isset(name);
 };
 
 Env.prototype.set = function(name, val) {
