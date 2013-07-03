@@ -217,14 +217,14 @@ var read = function(tokenizer) {
     }
 };
 
-var Closure = function(lambdaexpr, env) {
-    this.formals = lambdaexpr.cdr.car;
+var Closure = function(lambdacdr, env) {
+    this.formals = lambdacdr.car;
 
     if (this.formals !== EMPTYLIST && !(this.formals instanceof Pair)) {
         throw "lambda's second argument must be a list, not " + formals;
     }
 
-    this.body = lambdaexpr.cdr.cdr.car;
+    this.body = lambdacdr.cdr.car;
     this.env = env;
 };
 
@@ -284,6 +284,17 @@ var list = function() {
     }
 };
 
+var listtoarray = function(l) {
+    var arr = [],
+        i = 0;
+
+    for (i = 0; l !== EMPTYLIST; l = l.cdr) {
+        arr[i++] = l.car;
+    }
+
+    return arr;
+};
+
 // Returns true only if the length of l is between min and max (inclusive):
 var lengthbetween = function(l, min, max) {
     if (l == EMPTYLIST) {
@@ -293,6 +304,95 @@ var lengthbetween = function(l, min, max) {
     } else {
         return lengthbetween(l.cdr, min - 1, max - 1);
     }
+};
+
+// Special operators; each function takes an unevaluated list of "arguments",
+// an environment, and a continuation, and returns a thunk like that returned
+// by eval:
+var operators = {
+    quote: function(args, env, cont) {
+        if (lengthbetween(args, 1, 1)) {
+            return function() {
+                return cont(args.car);
+            };
+        } else {
+            throw "quote must take exactly one argument. ";
+        }
+    },
+
+    "if": function(args, env, cont) {
+        if (lengthbetween(args, 3, 3)) {
+            var argsarr = listtoarray(args);
+
+            return function() {
+                var ifcont = function(condres) {
+                    return eval(argsarr[condres === "#f" ? 2 : 1], env, cont);
+                };
+
+                return eval(argsarr[0], env, ifcont);
+            };
+        } else {
+            throw "if must take exactly three arguments";
+        }
+    },
+
+    lambda: function(args, env, cont) {
+        if (lengthbetween(args, 2, 2)) {
+            return function() {
+                return cont(new Closure(args, env));
+            };
+        } else {
+            throw "lambda must take exactly two arguments";
+        }
+    },
+
+    letcc: function(args, env, cont) {
+        if (lengthbetween(args, 2, 2)) {
+            var ccname = args.car,
+                body = args.cdr.car,
+                letccmap = {};
+
+            // apply uses the name "cc" to know that it can throw away its
+            // continuation.
+            letccmap[ccname] = function cc(ccargs) {
+                if (lengthbetween(ccargs, 1, 1)) {
+                    return cont(ccargs.car);
+                } else {
+                    throw "A continuation must have exactly one argument";
+                }
+            };
+
+            return function() {
+                return eval(body, new Env(letccmap, env), cont);
+            };
+        } else {
+            throw "letcc must take exactly two arguments";
+        }
+    },
+
+    define: function(args, env, cont) {
+        if (lengthbetween(args, 2, 2)) {
+            var name = args.car,
+                valexpr = args.cdr.car;
+
+            if (typeof name != "string") {
+                throw "define's first argument must be a name, not " +
+                    name;
+            }
+
+            return function() {
+                var assign = function(val) {
+                    console.log("setting " + name + " to " + val);
+                    env.globalenv.map[name] = val;
+                    return cont("define");
+                };
+
+                return eval(valexpr, env, assign);
+            };
+        } else {
+            throw "define must have exactly two arguments";
+        }
+    },
 };
 
 // Takes a lisp expression, an environment, and a continuation; returns a thunk
@@ -305,85 +405,11 @@ var eval = function(expr, env, cont) {
             return cont(expr);
         };
     } else if (expr instanceof Pair) {
-        if (expr.car == "quote") {
-            if (lengthbetween(expr, 2, 2)) {
-                return function() {
-                    return cont(expr.cdr.car);
-                };
-            } else {
-                throw "quote must take exactly one argument. " + expr;
-            }
-        } else if (expr.car == "if") {
-            if (lengthbetween(expr, 4, 4)) {
-                var condexpr = expr.cdr.car,
-                    thenexpr = expr.cdr.cdr.car,
-                    elseexpr = expr.cdr.cdr.cdr.car;
-                return function() {
-                    var ifcont = function(condresult) {
-                        if (condresult === "#f") {
-                            return eval(elseexpr, env, cont);
-                        } else {
-                            return eval(thenexpr, env, cont);
-                        }
-                    };
+        var oporfn = expr.car, // An operator or (unevaluated) function.
+            args = expr.cdr; // Arguments (also unevaluated).
 
-                    return eval(condexpr, env, ifcont);
-                };
-            } else {
-                throw "if must take exactly three arguments. " + expr;
-            }
-        } else if (expr.car == "lambda") {
-            if (lengthbetween(expr, 3, 3)) {
-                return function() {
-                    return cont(new Closure(expr, env));
-                };
-            } else {
-                throw "lambda must take exactly two arguments. " + expr;
-            }
-        } else if (expr.car == "letcc") {
-            if (lengthbetween(expr, 3, 3)) {
-                var ccname = expr.cdr.car,
-                    body = expr.cdr.cdr.car,
-                    letccmap = {};
-
-                // apply uses the name "cc" to know that it can throw away its
-                // continuation.
-                letccmap[ccname] = function cc(args) {
-                    if (lengthbetween(args, 1, 1)) {
-                        return cont(args.car);
-                    } else {
-                        throw "A continuation must have exactly one argument";
-                    }
-                };
-
-                return function() {
-                    return eval(body, new Env(letccmap, env), cont);
-                };
-            } else {
-                throw "letcc must take exactly two arguments. " + expr;
-            }
-        } else if (expr.car == "define") {
-            if (lengthbetween(expr, 3, 3)) {
-                var name = expr.cdr.car,
-                    valexpr = expr.cdr.cdr.car;
-
-                if (typeof name != "string") {
-                    throw "define's first argument must be a name, not " +
-                        name;
-                }
-
-                return function() {
-                    var assign = function(val) {
-                        console.log("setting " + name + " to " + val);
-                        env.globalenv.map[name] = val;
-                        return cont("define");
-                    };
-
-                    return eval(valexpr, env, assign);
-                };
-            } else {
-                throw "define must have exactly one argument";
-            }
+        if (typeof oporfn == "string" && operators.hasOwnProperty(oporfn)) {
+            return operators[oporfn](args, env, cont);
         } else {
             return function() {
                 var evalargs = function(fn) {
@@ -391,10 +417,10 @@ var eval = function(expr, env, cont) {
                         return apply(fn, args, cont);
                     };
 
-                    return evlis(expr.cdr, env, applyfntoargs);
+                    return evlis(args, env, applyfntoargs);
                 };
 
-                return eval(expr.car, env, evalargs);
+                return eval(oporfn, env, evalargs);
             };
         }
     } else if (typeof expr == "string") {
