@@ -478,6 +478,30 @@ var operators = {
         } else {
             throw "Cannot set! " + name + " -- not defined or not in scope";
         }
+    },
+
+    // apply is an operator rather than a builtin so it won't grow the
+    // JavaScript stack:
+    apply: function(args, env, cont) {
+        if (args === EMPTYLIST || args.cdr === EMPTYLIST ||
+            args.cdr.cdr !== EMPTYLIST
+        ) {
+            throw "apply needs 2 arguments";
+        }
+
+        return function() {
+            var evalarglist = function(fn) {
+                return function() {
+                    var applyfntoarglist = function(arglist) {
+                        return apply(fn, arglist, cont);
+                    };
+
+                    return eval(args.cdr.car, env, applyfntoarglist);
+                };
+            };
+
+            return eval(args.car, env, evalarglist);
+        };
     }
 };
 
