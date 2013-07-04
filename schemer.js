@@ -236,7 +236,10 @@ Closure.prototype.toString = function() {
 };
 
 // Built-in functions.  These all take a single JavaScript argument that is a
-// list of their (already evaluated) lisp arguments.
+// list of their (already evaluated) lisp arguments.  For simplicity, they
+// return a value (rather than taking a continuation and returning a thunk), so
+// some of them do grow the JavaScript stack, but only a limited amount.
+// (E.g., builtin_plus recurses once for each argument.)
 var builtins = {
     "+": function builtin_plus(args) {
         if (args === EMPTYLIST) {
