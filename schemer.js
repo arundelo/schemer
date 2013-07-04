@@ -620,6 +620,7 @@ Env.prototype.set = function(name, val) {
 window.main = function() {
     var inputtextarea = document.getElementById("input"),
         outputtextarea = document.getElementById("output"),
+        button = document.getElementById("button"),
         listener;
 
     listener = function(ev) {
@@ -652,6 +653,13 @@ window.main = function() {
 
         while (loop) {
             try {
+                // FIXME:  At least on the browser I'm using now (old version
+                // of Chrome) disabling the button and changing the mouse
+                // cursor don't take effect until the next time control passes
+                // back to the event loop.  Brief investigation says that to
+                // get this to work I'll need to use setTimeout.
+                button.disabled = true;
+                document.body.style.cursor = "wait";
                 expr = read(tokenizer);
                 if (expr === EOF) {
                     val = undefined;
@@ -672,6 +680,9 @@ window.main = function() {
                 loop = false;
                 val = (e.stack || e).toString();
             }
+
+            document.body.style.cursor = "default";
+            button.disabled = false;
 
             if (val !== undefined) {
                 outputtextarea.value += sep + val;
