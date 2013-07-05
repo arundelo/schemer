@@ -9,7 +9,8 @@ the Scheme-like dialect used in Friedman and Felleisen's
 Features
 --------
 
-- Continuations (with `letcc`).
+- Continuations (with
+  [`letcc`](http://community.schemewiki.org/?seasoned-schemer)).
 - Tail call elimination.
 - Lexical scope.
 - `'foo` syntax for `(quote foo)`.
