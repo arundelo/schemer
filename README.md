@@ -3,8 +3,8 @@ schemer.js
 
 This is a Lisp interpreter in JavaScript.  It's inspired by
 the Scheme-like dialect used in Friedman and Felleisen's
-[*The Little Schemer](http://www.ccs.neu.edu/home/matthias/BTLS/) and
-[*The Seasoned Schemer](http://www.ccs.neu.edu/home/matthias/BTLS/).
+[*The Little Schemer*](http://www.ccs.neu.edu/home/matthias/BTLS/) and
+[*The Seasoned Schemer*](http://www.ccs.neu.edu/home/matthias/BTLS/).
 
 Features
 --------
