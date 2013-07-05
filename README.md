@@ -2,16 +2,16 @@ schemer.js
 ==========
 
 This is a Lisp interpreter in JavaScript.  It's inspired by the Scheme-like
-dialect used in Friedman and Felleisen's [*The Little Schemer*][] and
-[*The Seasoned Schemer*][].
+dialect used in Friedman and Felleisen's [*The Little Schemer*] [littleschemer]
+and [*The Seasoned Schemer*] [seasonedschemer].
 
-  [*The Little Schemer*]: http://www.ccs.neu.edu/home/matthias/BTLS/
-  [*The Seasoned Schemer*]: http://www.ccs.neu.edu/home/matthias/BTSS/
+  [littleschemer]: http://www.ccs.neu.edu/home/matthias/BTLS/
+  [seasonedschemer]: http://www.ccs.neu.edu/home/matthias/BTSS/
 
 If you're reading this on GitHub and you want to try out the interpreter, use
-[this rawgithub.com link] [].
+[this rawgithub.com link] [rawgithub].
 
-  [this rawgithub.com link]: https://rawgithub.com/arundelo/schemer/master/index.html
+  [rawgithub]: https://rawgithub.com/arundelo/schemer/master/index.html
 
 Features
 --------
