@@ -1,29 +1,27 @@
 schemer.js
 ==========
 
-This is a Lisp interpreter in JavaScript.  It's inspired by
-the Scheme-like dialect used in Friedman and Felleisen's
-[*The Little Schemer*] [] and
-[*The Seasoned Schemer*] [].
+This is a Lisp interpreter in JavaScript.  It's inspired by the Scheme-like
+dialect used in Friedman and Felleisen's [*The Little Schemer*][] and
+[*The Seasoned Schemer*][].
 
-[*The Little Schemer*]: http://www.ccs.neu.edu/home/matthias/BTLS/
-[*The Seasoned Schemer*]: http://www.ccs.neu.edu/home/matthias/BTLS/
+  [*The Little Schemer*]: http://www.ccs.neu.edu/home/matthias/BTLS/
+  [*The Seasoned Schemer*]: http://www.ccs.neu.edu/home/matthias/BTLS/
 
 If you're reading this on GitHub and you want to try out the interpreter, use
 [this rawgithub.com link] [].
 
-[this rawgithub.com link]: https://rawgithub.com/arundelo/schemer/master/index.html
+  [this rawgithub.com link]: https://rawgithub.com/arundelo/schemer/master/index.html
 
 Features
 --------
 
-- Continuations (with
-  [`letcc`] [letcc]).
+- Continuations (with [`letcc`] [letcc]).
 - Tail call elimination.
 - Lexical scope.
 - `'foo` syntax for `(quote foo)`.
 
-[letcc]: http://community.schemewiki.org/?seasoned-schemer
+  [letcc]: http://community.schemewiki.org/?seasoned-schemer
 
 Notes
 -----
