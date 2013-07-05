@@ -6,7 +6,9 @@ the Scheme-like dialect used in Friedman and Felleisen's
 [*The Little Schemer*](http://www.ccs.neu.edu/home/matthias/BTLS/) and
 [*The Seasoned Schemer*](http://www.ccs.neu.edu/home/matthias/BTLS/).
 
-[rawgithub.com link.](https://rawgithub.com/arundelo/schemer/master/index.html)
+If you're reading this on GitHub and you want to try out the interpreter, [use
+this rawgithub.com
+link](https://rawgithub.com/arundelo/schemer/master/index.html).
 
 Features
 --------
