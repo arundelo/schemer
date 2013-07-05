@@ -280,6 +280,31 @@ var builtins = {
     alert: function builtin_alert(args) {
         window.alert(args);
         return args;
+    },
+
+    "atom?": function builtin_atom(args) {
+        return args.car !== EMPTYLIST && !(args.car instanceof Pair)
+            ? "#t" : "#f";
+    },
+
+    "<": function builtin_lt(args) {
+        return args.car < args.cdr.car ? "#t" : "#f";
+    },
+
+    ">": function builtin_gt(args) {
+        return args.car > args.cdr.car ? "#t" : "#f";
+    },
+
+    "-": function builtin_minus(args) {
+        return args.car - args.cdr.car;
+    },
+
+    "add1": function builtin_add1(args) {
+        return args.car + 1;
+    },
+
+    "sub1": function builtin_sub1(args) {
+        return args.car - 1;
     }
 };
 
@@ -293,10 +318,6 @@ for (var lispname in builtins) {
     if (builtins.hasOwnProperty(lispname)) {
         builtins[lispname].toString = functioncustomtostring;;
     };
-};
-
-var isatom = function(x) {
-    return x !== EMPTYLIST && !(x instanceof Pair);
 };
 
 var isselfevaluating = function(expr) {
