@@ -308,6 +308,10 @@ var builtins = {
 
     "sub1": function builtin_sub1(args) {
         return args.car - 1;
+    },
+
+    "not": function builtin_not(args) {
+        return args.car === false;
     }
 };
 
