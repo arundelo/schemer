@@ -109,6 +109,10 @@ Tokenizer.prototype.readatom = function() {
             this.mythrow("Number (" + atom +
                 ") too high (should be no higher than " + BIGPRECISEINT + ")");
         }
+    } else if (atom == "#t") {
+        return true;
+    } else if (atom == "#f") {
+        return false;
     }
 
     return atom;
@@ -270,11 +274,11 @@ var builtins = {
     "eq?": function builtin_eq(args) {
         // FIXME:  In The Little Schemer it's undefined to ask eq? about lists
         // or numbers.
-        return args.car === args.cdr.car ? "#t" : "#f";
+        return args.car === args.cdr.car;
     },
 
     "null?": function builtin_nullp(args) {
-        return args.car === EMPTYLIST ? "#t" : "#f";
+        return args.car === EMPTYLIST;
     },
 
     alert: function builtin_alert(args) {
@@ -283,16 +287,15 @@ var builtins = {
     },
 
     "atom?": function builtin_atom(args) {
-        return args.car !== EMPTYLIST && !(args.car instanceof Pair)
-            ? "#t" : "#f";
+        return args.car !== EMPTYLIST && !(args.car instanceof Pair);
     },
 
     "<": function builtin_lt(args) {
-        return args.car < args.cdr.car ? "#t" : "#f";
+        return args.car < args.cdr.car;
     },
 
     ">": function builtin_gt(args) {
-        return args.car > args.cdr.car ? "#t" : "#f";
+        return args.car > args.cdr.car;
     },
 
     "-": function builtin_minus(args) {
@@ -322,8 +325,7 @@ for (var lispname in builtins) {
 
 var isselfevaluating = function(expr) {
     return typeof expr == "number"
-        || expr == "#t"
-        || expr == "#f"
+        || typeof expr == "boolean"
         || expr == EMPTYLIST;
 };
 
@@ -380,7 +382,7 @@ var operators = {
 
             return function() {
                 var ifcont = function(condres) {
-                    return eval(argsarr[condres === "#f" ? 2 : 1], env, cont);
+                    return eval(argsarr[condres ? 1 : 2], env, cont);
                 };
 
                 return eval(argsarr[0], env, ifcont);
@@ -722,7 +724,12 @@ window.main = function() {
                         thunk = thunk();
                     }
 
-                    val = thunk.toString();
+                    if (typeof thunk == "boolean") {
+                        // FIXME:  This should be factored out.
+                        val = thunk ? "#t" : "#f";
+                    } else {
+                        val = thunk.toString();
+                    }
                 }
             } catch (e) {
                 loop = false;
