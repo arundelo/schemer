@@ -6,7 +6,7 @@ dialect used in Friedman and Felleisen's [*The Little Schemer*][] and
 [*The Seasoned Schemer*][].
 
   [*The Little Schemer*]: http://www.ccs.neu.edu/home/matthias/BTLS/
-  [*The Seasoned Schemer*]: http://www.ccs.neu.edu/home/matthias/BTLS/
+  [*The Seasoned Schemer*]: http://www.ccs.neu.edu/home/matthias/BTSS/
 
 If you're reading this on GitHub and you want to try out the interpreter, use
 [this rawgithub.com link] [].
