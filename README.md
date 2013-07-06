@@ -32,6 +32,7 @@ Lots of stuff to do:
 - Better error checking in built-in functions.
 - Evaluate the input textarea in one go so the current continuation in a
   top-level form includes the rest of the top-level forms.
+- Separate syntax checker (so `eval`'s logic can be simpler).
 - Macros.  (It would be nice to implement `cond`, `call/cc`, `and`, etc. with
   these.)
 - Variadic functions.  (Probably with `(lambda args body)` syntax.)
