@@ -43,5 +43,8 @@ Lots of stuff to do:
   continuations.
 - Allow `letcc` and `letrec` (and maybe `lambda`) to take multi-expression
   bodies.
+- Do a free variable analysis on lambda expressions?  Right now when one is
+  evaluated it captures all variables in scope (even unused ones) and even
+  variables that would be in scope if they weren't shadowed.
 - Clean up code.
 - Various other FIXMEs (see source code).
