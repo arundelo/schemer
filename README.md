@@ -48,3 +48,5 @@ Lots of stuff to do:
   variables that would be in scope if they weren't shadowed.
 - Clean up code.
 - Various other FIXMEs (see source code).
+
+<!-- vim: set sw=4 ts=4 expandtab ft=markdown: -->
