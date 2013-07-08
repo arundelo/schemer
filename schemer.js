@@ -22,7 +22,7 @@ var Tokenizer = function(inputstring, pos) {
     // character except for whitespace, controls, single quote, parentheses,
     // and semicolon):
     this.atomchre = /[!-&*-:<-~]/;
-    this.prevtok = undefined;
+    this.prevtok = null;
     this.ungotten = false;
 };
 
@@ -152,7 +152,7 @@ Tokenizer.prototype.get = function() {
 };
 
 Tokenizer.prototype.unget = function() {
-    if (this.prevtok === undefined) {
+    if (this.prevtok === null) {
         this.mythrow("Unexpected unget", true);
     } else if (this.ungotten) {
         this.mythrow("Multi-level unget not supported", true);
@@ -707,6 +707,8 @@ window.main = function() {
                     thunk.name.search(/^builtin_/) == -1);
         };
 
+        val = null;
+
         while (loop) {
             try {
                 // FIXME:  At least on the browser I'm using now (old version
@@ -718,7 +720,7 @@ window.main = function() {
                 document.body.style.cursor = "wait";
                 expr = read(tokenizer);
                 if (expr === EOF) {
-                    val = undefined;
+                    val = null;
                     loop = false;
                 } else {
                     // Trampoline:
@@ -745,7 +747,7 @@ window.main = function() {
             document.body.style.cursor = "default";
             button.disabled = false;
 
-            if (val !== undefined) {
+            if (val !== null) {
                 outputtextarea.value += sep + val;
                 sep = "\n\n";
             }
