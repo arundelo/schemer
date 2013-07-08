@@ -47,6 +47,8 @@ Lots of stuff to do:
 - Do a free variable analysis on lambda expressions?  Right now when one is
   evaluated it captures all variables in scope (even unused ones) and even
   variables that would be in scope if they weren't shadowed.
+- Make it illegal to evaluate a `define` or `set!` expression in a context
+  where its value is not thrown away?
 - Clean up code.
 - Various other FIXMEs (see source code).
 
