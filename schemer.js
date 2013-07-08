@@ -503,6 +503,8 @@ var operators = {
                 return eval(valexpr, env, assign);
             };
         } else {
+            // FIXME: The Seasoned Schemer creates a global binding in this
+            // case (pp. 91-95).
             throw "Cannot set! " + name + " -- not defined or not in scope";
         }
     },
