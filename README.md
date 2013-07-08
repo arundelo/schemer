@@ -42,8 +42,8 @@ Lots of stuff to do:
   the event loop can breathe).
 - Double check that no calls in tail position unnecessarily allocate
   continuations.
-- Allow `letcc` and `letrec` (and maybe `lambda`) to take multi-expression
-  bodies.
+- Allow `lambda`, `letcc`, etc. to take multi-expression bodies.  (`cond`
+  clauses too?)
 - Do a free variable analysis on lambda expressions?  Right now when one is
   evaluated it captures all variables in scope (even unused ones) and even
   variables that would be in scope if they weren't shadowed.
