@@ -591,8 +591,9 @@ var evlis = function(exprs, env, cont) {
     }
 };
 
-// Applies a function (already evaluated) to a list of arguments; returns a
-// thunk that calls the given continuation with the results:
+// Applies a function (already evaluated) to a list of arguments (already
+// evaluated); returns a thunk that calls the given continuation with the
+// result:
 var apply = function(fn, args, cont) {
     if (fn instanceof Closure) {
         var formals = fn.formals,
