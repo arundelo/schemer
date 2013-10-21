@@ -710,6 +710,7 @@ window.main = function() {
 
         val = null;
 
+        // For each expression the tokenizer gets from the textarea:
         while (loop) {
             try {
                 // FIXME:  At least on the browser I'm using now (old version
