@@ -1,9 +1,10 @@
 schemer.js
 ==========
 
-This is a Lisp interpreter in JavaScript.  It's inspired by the Scheme-like
-dialect used in Friedman and Felleisen's [*The Little Schemer*] [littleschemer]
-and [*The Seasoned Schemer*] [seasonedschemer].
+This is a Lisp interpreter in JavaScript.  My main guide for which features to
+include and what to call built-in functions (e.g., `null?` versus `null`) is
+the Scheme-like dialect used in Friedman and Felleisen's [*The Little Schemer*]
+[littleschemer] and [*The Seasoned Schemer*] [seasonedschemer].
 
   [littleschemer]: http://www.ccs.neu.edu/home/matthias/BTLS/
   [seasonedschemer]: http://www.ccs.neu.edu/home/matthias/BTSS/
