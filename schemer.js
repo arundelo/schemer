@@ -708,18 +708,19 @@ window.main = function() {
                     thunk.name.search(/^builtin_/) == -1);
         };
 
+        // FIXME:  At least on the browser I'm using now (old version of
+        // Chrome) disabling the button and changing the mouse cursor don't
+        // take effect until the next time control passes back to the event
+        // loop.  Brief investigation says that to get this to work I'll need
+        // to use setTimeout.
+        button.disabled = true;
+        document.body.style.cursor = "wait";
+
         val = null;
 
         // For each expression the tokenizer gets from the textarea:
         while (loop) {
             try {
-                // FIXME:  At least on the browser I'm using now (old version
-                // of Chrome) disabling the button and changing the mouse
-                // cursor don't take effect until the next time control passes
-                // back to the event loop.  Brief investigation says that to
-                // get this to work I'll need to use setTimeout.
-                button.disabled = true;
-                document.body.style.cursor = "wait";
                 expr = read(tokenizer);
                 if (expr === EOF) {
                     val = null;
@@ -746,14 +747,14 @@ window.main = function() {
                 val = (e.stack || e).toString();
             }
 
-            document.body.style.cursor = "default";
-            button.disabled = false;
-
             if (val !== null) {
                 outputtextarea.value += sep + val;
                 sep = "\n\n";
             }
         }
+
+        document.body.style.cursor = "default";
+        button.disabled = false;
     };
 
     document.body.addEventListener("keydown", listener, false);
