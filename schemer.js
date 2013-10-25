@@ -754,7 +754,13 @@ window.main = function() {
                 }
             } catch (e) {
                 loop = false;
-                val = (e.stack || e).toString();
+                val = e.toString();
+                if (e.stack) {
+                    // In Firefox the stack trace does not include the error
+                    // message but in Chrome it does, so it'll be repeated.
+                    // Annoying but not enough to code around it now.
+                    val += "\n" + e.stack;
+                }
             }
 
             if (val !== null) {
