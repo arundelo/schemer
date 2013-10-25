@@ -710,7 +710,8 @@ window.main = function() {
         listener;
 
     listener = function(ev) {
-        var tokenizer, loop, sep, expr, val, e;
+        var sep, printtotextarea, tokenizer, env, expr, cont, thunk, e,
+            errormsg;
 
         if (ev.type == "keydown" && ev.keyCode == KEYCODEENTER && ev.shiftKey
                 && !(ev.altGraphKey || ev.altKey || ev.ctrlKey || ev.metaKey)
@@ -722,20 +723,17 @@ window.main = function() {
             return; // WE ARE NOT INTERESTED IN THIS EVENT.
         }
 
+        sep = "";
+
+        // FIXME:  Factor this out.
+        printtotextarea = function(str) {
+            outputtextarea.value += sep + str;
+            sep = "\n\n";
+        };
+
         tokenizer = new Tokenizer(inputtextarea.value);
         outputtextarea.value = "";
-        loop = true;
-        sep = "";
         env = new Env(builtins);
-
-        // As far as the trampoline is concerned, a thunk is any function that
-        // isn't a lisp continuation or lisp built-in function:
-        var isthunk = function(x) {
-            return typeof thunk == "function" &&
-                (!thunk.name ||
-                    thunk.name != "continuation" &&
-                    thunk.name.search(/^builtin_/) == -1);
-        };
 
         // FIXME:  At least on the browser I'm using now (old version of
         // Chrome) disabling the button and changing the mouse cursor don't
@@ -745,46 +743,47 @@ window.main = function() {
         button.disabled = true;
         document.body.style.cursor = "wait";
 
-        val = null;
+        try {
+            // This is the main loop.  It's just a read-eval-print loop but
+            // expressed in trampolined continuation-passing style.  Both
+            // thunks and continuations always return another thunk or nothing
+            // if there's nothing left to do.
+            expr = read(tokenizer);
 
-        // For each expression the tokenizer gets from the textarea:
-        while (loop) {
-            try {
-                expr = read(tokenizer);
-                if (expr === EOF) {
-                    val = null;
-                    loop = false;
-                } else {
-                    // Trampoline:
-                    var thunk = function() {
-                        return eval(expr, env, function(val) {return val;});
-                    };
+            if (expr !== EOF) {
+                cont = function(val) {
+                    var expr;
 
-                    while (isthunk(thunk)) {
-                        thunk = thunk();
+                    printtotextarea(lisptostring(val));
+
+                    expr = read(tokenizer);
+
+                    if (expr === EOF) {
+                        document.body.style.cursor = "default";
+                        button.disabled = false;
+                    } else {
+                        return eval(expr, env, cont);
                     }
+                };
 
-                    val = lisptostring(thunk);
-                }
-            } catch (e) {
-                loop = false;
-                val = e.toString();
-                if (e.stack) {
-                    // In Firefox the stack trace does not include the error
-                    // message but in Chrome it does, so it'll be repeated.
-                    // Annoying but not worth it to code around now.
-                    val += "\n" + e.stack;
+                thunk = eval(expr, env, cont);
+
+                while (thunk) {
+                    thunk = thunk();
                 }
             }
-
-            if (val !== null) {
-                outputtextarea.value += sep + val;
-                sep = "\n\n";
+        } catch (e) {
+            errormsg = e.toString();
+            if (e.stack) {
+                // In Firefox the stack trace does not include the error
+                // message but in Chrome it does, so it'll be repeated.
+                // Annoying but not worth it to code around now.
+                errormsg += "\n" + e.stack;
             }
+            printtotextarea(errormsg);
+            document.body.style.cursor = "default";
+            button.disabled = false;
         }
-
-        document.body.style.cursor = "default";
-        button.disabled = false;
     };
 
     document.body.addEventListener("keydown", listener, false);
