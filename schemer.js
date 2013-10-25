@@ -416,7 +416,7 @@ var operators = {
 
             // apply uses the name "cc" to know that it can throw away its
             // continuation.
-            letccmap[ccname] = function continuation(ccargs) {
+            letccmap[ccname] = function cc(ccargs) {
                 if (lengthbetween(ccargs, 1, 1)) {
                     return cont(ccargs.car);
                 } else {

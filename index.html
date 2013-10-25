@@ -73,6 +73,29 @@ textarea {font-family: monospace;}
        ; which n will be incremented again:
        (outercont #f))))
  0 #f)
+
+;; Continuation test -- make sure that when a continuation is called the
+;; continuation that was pending is discarded.
+
+(define outercont 'placeholder)
+
+(define n 0)
+
+(begin
+  (letcc innercont (set! outercont innercont))
+  (set! n (add1 n))
+  (list 'letcc 'returned 'time n))
+
+; This "if" would be necessary to prevent an infinite loop if not for
+; the semantic issue with control passing from a letcc continuation to
+; the top level.  See the current FIXME list in README.md.
+(if (eq? n 1)
+  (begin
+    ; When outercont is called it should transfer control to right after
+    ; the above letcc.
+    (outercont 'mumble)
+    (alert 'This 'should 'not 'be 'reached))
+  'mumble)
 </textarea>
 
 <p>
