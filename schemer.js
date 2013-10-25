@@ -414,8 +414,9 @@ var operators = {
                 body = args.cdr.car,
                 letccmap = {};
 
-            // apply uses the name "cc" to know that it can throw away its
-            // continuation.
+            // apply uses the name "cc" to know that it can throw away the
+            // continuation it normally would pass control to and use this one
+            // instead.
             letccmap[ccname] = function cc(ccargs) {
                 if (lengthbetween(ccargs, 1, 1)) {
                     return cont(ccargs.car);
