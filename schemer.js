@@ -639,14 +639,23 @@ var apply = function(fn, args, cont) {
 
 // Converts a Lisp value to its string representation:
 var lisptostring = function(val) {
+    var str, firstchar;
+
     switch (typeof val) {
     case "boolean":
         return val ? "#t" : "#f";
     case "string":
     case "number":
+        return val.toString();
     case "function":
     case "object":
-        return val.toString();
+        str = val.toString();
+        firstchar = str.charAt(0);
+        if (firstchar === "#" || firstchar === "(") {
+            return str;
+        } else {
+            throw new Error("Not a lisp value: " + val);
+        }
     default:
         throw new Error("Not a lisp value: " + val);
     }
