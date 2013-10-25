@@ -632,6 +632,21 @@ var apply = function(fn, args, cont) {
 
 };
 
+// Converts a Lisp value to its string representation:
+var lisptostring = function(val) {
+    switch (typeof val) {
+    case "boolean":
+        return val ? "#t" : "#f";
+    case "string":
+    case "number":
+    case "function":
+    case "object":
+        return val.toString();
+    default:
+        throw "Not a lisp value: " + val;
+    }
+};
+
 var Env = function(map, parentenv) {
     this.map = map;
 
@@ -735,12 +750,7 @@ window.main = function() {
                         thunk = thunk();
                     }
 
-                    if (typeof thunk == "boolean") {
-                        // FIXME:  This should be factored out.
-                        val = thunk ? "#t" : "#f";
-                    } else {
-                        val = thunk.toString();
-                    }
+                    val = lisptostring(thunk);
                 }
             } catch (e) {
                 loop = false;
