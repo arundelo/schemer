@@ -376,7 +376,7 @@ var operators = {
                 return cont(args.car);
             };
         } else {
-            throw "quote must take exactly one argument. ";
+            throw "quote must take exactly one argument.";
         }
     },
 
