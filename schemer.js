@@ -33,7 +33,7 @@ Tokenizer.prototype.mythrow = function(message, notusersfault) {
         message = "Not your fault: " + message;
     }
 
-    throw message + " at line " + this.linenum;
+    throw new Error(message + " at line " + this.linenum);
 };
 
 // Skips past whitespace and comments:
@@ -175,8 +175,9 @@ Pair.prototype.toStringHelper = function() {
     } else {
         // This implementation doesn't understand improper lists and should
         // never produce them:
-        throw "Not your fault: Improper list found: (" +
-            this.car + " . " + this.cdr + ")";
+        throw new Error(
+            "Not your fault: Improper list found: (" +
+                this.car + " . " + this.cdr + ")");
     }
 };
 
@@ -228,7 +229,8 @@ var Closure = function(lambdacdr, env) {
     this.formals = lambdacdr.car;
 
     if (this.formals !== EMPTYLIST && !(this.formals instanceof Pair)) {
-        throw "lambda's second argument must be a list, not " + formals;
+        throw new Error(
+            "lambda's second argument must be a list, not " + formals);
     }
 
     this.body = lambdacdr.cdr.car;
@@ -376,7 +378,7 @@ var operators = {
                 return cont(args.car);
             };
         } else {
-            throw "quote must take exactly one argument.";
+            throw new Error("quote must take exactly one argument.");
         }
     },
 
@@ -392,7 +394,7 @@ var operators = {
                 return eval(argsarr[0], env, ifcont);
             };
         } else {
-            throw "if must take exactly three arguments";
+            throw new Error("if must take exactly three arguments");
         }
     },
 
@@ -402,7 +404,7 @@ var operators = {
                 return cont(new Closure(args, env));
             };
         } else {
-            throw "lambda must take exactly two arguments";
+            throw new Error("lambda must take exactly two arguments");
         }
     },
 
@@ -418,7 +420,8 @@ var operators = {
                 if (lengthbetween(ccargs, 1, 1)) {
                     return cont(ccargs.car);
                 } else {
-                    throw "A continuation must have exactly one argument";
+                    throw new Error(
+                        "A continuation must have exactly one argument");
                 }
             };
 
@@ -428,7 +431,7 @@ var operators = {
                 return eval(body, new Env(letccmap, env), cont);
             };
         } else {
-            throw "letcc must take exactly two arguments";
+            throw new Error("letcc must take exactly two arguments");
         }
     },
 
@@ -438,8 +441,8 @@ var operators = {
                 valexpr = args.cdr.car;
 
             if (typeof name != "string") {
-                throw "define's first argument must be a name, not " +
-                    name;
+                throw new Error(
+                    "define's first argument must be a name, not " + name);
             }
 
             return function() {
@@ -451,13 +454,13 @@ var operators = {
                 return eval(valexpr, env, assign);
             };
         } else {
-            throw "define must have exactly two arguments";
+            throw new Error("define must have exactly two arguments");
         }
     },
 
     begin: function(args, env, cont) {
         if (args === EMPTYLIST) {
-            throw "begin needs at least one argument";
+            throw new Error("begin needs at least one argument");
         }
 
         var beginhelper = function beginhelper(args) {
@@ -483,14 +486,14 @@ var operators = {
         var argsarr = listtoarray(args);
 
         if (argsarr.length != 2) {
-            throw "set! needs exactly two arguments";
+            throw new Error("set! needs exactly two arguments");
         }
 
         var name = argsarr[0],
             valexpr = argsarr[1];
 
         if (typeof name != "string") {
-            throw "set!'s first argument must be an identifier";
+            throw new Error("set!'s first argument must be an identifier");
         }
 
         if (env.isset(name)) {
@@ -505,7 +508,8 @@ var operators = {
         } else {
             // FIXME: The Seasoned Schemer creates a global binding in this
             // case (pp. 91-95).
-            throw "Cannot set! " + name + " -- not defined or not in scope";
+            throw new Error(
+                "Cannot set! " + name + " -- not defined or not in scope");
         }
     },
 
@@ -515,7 +519,7 @@ var operators = {
         if (args === EMPTYLIST || args.cdr === EMPTYLIST ||
             args.cdr.cdr !== EMPTYLIST
         ) {
-            throw "apply needs 2 arguments";
+            throw new Error("apply needs 2 arguments");
         }
 
         return function() {
@@ -566,7 +570,7 @@ var eval = function(expr, env, cont) {
             return cont(env.get(expr));
         };
     } else {
-        throw "I don't know how to evaluate " + expr;
+        throw new Error("I don't know how to evaluate " + expr);
     }
 };
 
@@ -606,9 +610,9 @@ var apply = function(fn, args, cont) {
         }
 
         if (args !== EMPTYLIST) {
-            throw "Not enough arguments";
+            throw new Error("Not enough arguments");
         } else if (formals !== EMPTYLIST) {
-            throw "Too many arguments";
+            throw new Error("Too many arguments");
         }
 
         return function() {
@@ -627,7 +631,7 @@ var apply = function(fn, args, cont) {
             };
         }
     } else {
-        throw "I don't know how to apply " + fn;
+        throw new Error("I don't know how to apply " + fn);
     }
 
 };
@@ -643,7 +647,7 @@ var lisptostring = function(val) {
     case "object":
         return val.toString();
     default:
-        throw "Not a lisp value: " + val;
+        throw new Error("Not a lisp value: " + val);
     }
 };
 
@@ -668,7 +672,7 @@ Env.prototype.get = function(name) {
     } else if (this.parentenv) {
         return this.parentenv.get(name);
     } else {
-        throw "\"" + name + "\" is undefined";
+        throw new Error("\"" + name + "\" is undefined");
     }
 };
 
@@ -758,7 +762,7 @@ window.main = function() {
                 if (e.stack) {
                     // In Firefox the stack trace does not include the error
                     // message but in Chrome it does, so it'll be repeated.
-                    // Annoying but not enough to code around it now.
+                    // Annoying but not worth it to code around now.
                     val += "\n" + e.stack;
                 }
             }
