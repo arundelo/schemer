@@ -323,6 +323,18 @@ var builtins = {
 
     "not": function builtin_not(args) {
         return args.car === false;
+    },
+
+    // Spin a delay loop for N seconds.  (This is for testing.)
+    "busy-wait": function builtin_busy_wait(args) {
+        var millisecs = args.car * 1000,
+            starttime = Date.now();
+
+        while (Date.now() - starttime < millisecs) {
+            // Spin.
+        }
+
+        return "done";
     }
 };
 
