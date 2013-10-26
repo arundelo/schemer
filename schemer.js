@@ -1,6 +1,8 @@
 // A lisp implementation inspired by the one used in The Little Schemer and The
 // Seasoned Schemer.
 
+"use strict";
+
 (function() {
 
 // Some constants:
@@ -377,7 +379,7 @@ var lengthbetween = function(l, min, max) {
 
 // Special operators; each function takes an unevaluated list of "arguments",
 // an environment, and a continuation, and returns a thunk like that returned
-// by eval:
+// by evl:
 var operators = {
     quote: function(args, env, cont) {
         if (lengthbetween(args, 1, 1)) {
@@ -395,10 +397,10 @@ var operators = {
 
             return function() {
                 var ifcont = function(condres) {
-                    return eval(argsarr[condres ? 1 : 2], env, cont);
+                    return evl(argsarr[condres ? 1 : 2], env, cont);
                 };
 
-                return eval(argsarr[0], env, ifcont);
+                return evl(argsarr[0], env, ifcont);
             };
         } else {
             throw new Error("if must take exactly three arguments");
@@ -436,7 +438,7 @@ var operators = {
             letccmap[ccname].toString = functioncustomtostring;
 
             return function() {
-                return eval(body, new Env(letccmap, env), cont);
+                return evl(body, new Env(letccmap, env), cont);
             };
         } else {
             throw new Error("letcc must take exactly two arguments");
@@ -459,7 +461,7 @@ var operators = {
                     return cont(val);
                 };
 
-                return eval(valexpr, env, assign);
+                return evl(valexpr, env, assign);
             };
         } else {
             throw new Error("define must have exactly two arguments");
@@ -474,15 +476,15 @@ var operators = {
         var beginhelper = function beginhelper(args) {
             return function() {
                 if (args.cdr == EMPTYLIST) {
-                    // We are at the end; eval and return the last value.
-                    return eval(args.car, env, cont);
+                    // We are at the end; evaluate and return the last value.
+                    return evl(args.car, env, cont);
                 } else {
                     // cdr down the list.
                     var begincont = function(ignored) {
                             return beginhelper(args.cdr);
                     };
 
-                    return eval(args.car, env, begincont);
+                    return evl(args.car, env, begincont);
                 }
             };
         };
@@ -511,7 +513,7 @@ var operators = {
                     return cont(val);
                 };
 
-                return eval(valexpr, env, assign);
+                return evl(valexpr, env, assign);
             };
         } else {
             // FIXME: The Seasoned Schemer creates a global binding in this
@@ -537,19 +539,21 @@ var operators = {
                         return apply(fn, arglist, cont);
                     };
 
-                    return eval(args.cdr.car, env, applyfntoarglist);
+                    return evl(args.cdr.car, env, applyfntoarglist);
                 };
             };
 
-            return eval(args.car, env, evalarglist);
+            return evl(args.car, env, evalarglist);
         };
     }
 };
 
 // Takes a lisp expression, an environment, and a continuation; returns a thunk
 // that when called evaluates the expression, passes the value to the
-// continuation, and returns whatever the continuation returns:
-var eval = function(expr, env, cont) {
+// continuation, and returns whatever the continuation returns.  (This is
+// called "evl" instead of "eval" because "use strict" doesn't allow binding to
+// the latter name.)
+var evl = function(expr, env, cont) {
     if (isselfevaluating(expr)) {
         return function() {
             return cont(expr);
@@ -570,7 +574,7 @@ var eval = function(expr, env, cont) {
                     return evlis(args, env, applyfntoargs);
                 };
 
-                return eval(oporfn, env, evalargs);
+                return evl(oporfn, env, evalargs);
             };
         }
     } else if (typeof expr == "string") {
@@ -582,7 +586,7 @@ var eval = function(expr, env, cont) {
     }
 };
 
-// Like eval, but evaluates a list of expressions:
+// Like evl, but evaluates a list of expressions:
 var evlis = function(exprs, env, cont) {
     if (exprs === EMPTYLIST) {
         return function() {
@@ -598,7 +602,7 @@ var evlis = function(exprs, env, cont) {
                 return evlis(exprs.cdr, env, consfirstonrest);
             };
 
-            return eval(exprs.car, env, evalrest);
+            return evl(exprs.car, env, evalrest);
         };
     }
 };
@@ -624,7 +628,7 @@ var apply = function(fn, args, cont) {
         }
 
         return function() {
-            return eval(fn.body, new Env(applymap, fn.env), cont);
+            return evl(fn.body, new Env(applymap, fn.env), cont);
         };
     } else if (typeof fn == "function") {
         if (fn.name === "cc") {
@@ -769,11 +773,11 @@ window.main = function() {
                         document.body.style.cursor = "default";
                         button.disabled = false;
                     } else {
-                        return eval(expr, env, cont);
+                        return evl(expr, env, cont);
                     }
                 };
 
-                thunk = eval(expr, env, cont);
+                thunk = evl(expr, env, cont);
 
                 while (thunk) {
                     thunk = thunk();
