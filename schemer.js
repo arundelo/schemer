@@ -865,12 +865,13 @@ var Model = function(view) {
     // Asynchronously evaluates the expressions in the given string and puts
     // the results in the output textarea:
     this.evl = function(str) {
-        var tokenizer = new Tokenizer(str),
+        var model = this,
+            tokenizer = new Tokenizer(str),
             firstthunk,
             e;
 
         view.clear();
-        this.evalmodeon();
+        model.evalmodeon();
 
         firstthunk = function() {
             var expr, cont;
@@ -894,7 +895,7 @@ var Model = function(view) {
                         expr = read(tokenizer);
 
                         if (expr === EOF) {
-                            this.evalmodeoff();
+                            model.evalmodeoff();
                         } else {
                             return evl(expr, env, cont);
                         }
@@ -904,14 +905,14 @@ var Model = function(view) {
                 }
             } catch (e) {
                 view.print(exceptiontostring(e));
-                this.evalmodeoff();
+                model.evalmodeoff();
             }
         };
 
         // Tell the browser to pass the first thunk (and the view) to
         // timeoutcallback as soon as possible.  (FIXME:  IE < 9 doesn't
         // understand extra args to window.setTimeout.)
-        window.setTimeout(timeoutcallback, 0, firstthunk, view, this);
+        window.setTimeout(timeoutcallback, 0, firstthunk, view, model);
     };
 
     this.setcontroller = function(innercontroller) {
