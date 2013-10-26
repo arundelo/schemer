@@ -726,9 +726,8 @@ Env.prototype.set = function(name, val) {
     }
 };
 
-var View = function(document, outputname, inputname, evalbuttonname) {
-    var outputtextarea = document.getElementById(outputname),
-        evalbutton = document.getElementById(evalbuttonname),
+var View = function(document, names) {
+    var outputtextarea = document.getElementById(names.output),
         styles,
         setcursors,
         sep;
@@ -736,7 +735,7 @@ var View = function(document, outputname, inputname, evalbuttonname) {
     styles = [
         document.body.style,
         outputtextarea.style,
-        document.getElementById(inputname).style
+        document.getElementById(names.input).style
     ];
 
     this.clear = function() {
@@ -756,13 +755,11 @@ var View = function(document, outputname, inputname, evalbuttonname) {
         }
     };
 
-    this.disable = function() {
-        evalbutton.disabled = true;
+    this.evalmodeon = function() {
         setcursors("wait");
     };
 
-    this.enable = function() {
-        evalbutton.disabled = false;
+    this.evalmodeoff = function() {
         setcursors("default");
     };
 
@@ -794,7 +791,7 @@ var exceptiontostring = function(e) {
     return errormsg;
 };
 
-var timeoutcallback = function(thunk, view) {
+var timeoutcallback = function(thunk, view, model) {
     var count = 0,
         e;
 
@@ -806,35 +803,64 @@ var timeoutcallback = function(thunk, view) {
         // continuations both always return another thunk or nothing if there's
         // nothing left to do.
         while (thunk) {
-            if (count < 500) {
+            if (model.interrupted) {
+                // THE USER TOLD US TO QUIT.
+                view.print("INTERRUPTED");
+                model.evalmodeoff();
+                model.interrupted = false;
+                return;
+            } else if (count < 500) {
                 // One more step of evaluation:
                 thunk = thunk();
                 count++;
             } else {
                 // Let the event loop breathe by setting up the next timeout
                 // callback invocation then EXITING THIS ONE:
-                window.setTimeout(timeoutcallback, 0, thunk, view);
+                window.setTimeout(timeoutcallback, 0, thunk, view, model);
                 return;
             }
         }
     } catch (e) {
         view.print(exceptiontostring(e));
-        view.enable();
+        model.evalmodeoff();
     }
 };
 
-var Controller = function(model, document, inputname) {
-    var inputtextarea = document.getElementById(inputname);
+var Controller = function(model, document, names) {
+    var inputtextarea = document.getElementById(names.input),
+        evalbutton = document.getElementById(names.evalbutton),
+        interruptbutton = document.getElementById(names.interruptbutton);
+
+    interruptbutton.disabled = true;
 
     // Asynchronously evaluates the expressions in the input textarea and puts
     // the results in the output textarea:
     this.evl = function() {
         model.evl(inputtextarea.value);
     };
+
+    this.interrupt = function() {
+        model.interrupted = true;
+    };
+
+    // Puts the controller in "evaluating mode" (disabling the eval button and
+    // enabling the interrupt button):
+    this.evalmodeon = function() {
+        evalbutton.disabled = true;
+        interruptbutton.disabled = false;
+    };
+
+    this.evalmodeoff = function() {
+        evalbutton.disabled = false;
+        interruptbutton.disabled = true;
+    };
 };
 
 var Model = function(view) {
-    var env = new Env(shallowcopy(builtins));
+    var env = new Env(shallowcopy(builtins)),
+        controller;
+
+    this.interrupted = false;
 
     // Asynchronously evaluates the expressions in the given string and puts
     // the results in the output textarea:
@@ -844,7 +870,7 @@ var Model = function(view) {
             e;
 
         view.clear();
-        view.disable();
+        this.evalmodeon();
 
         firstthunk = function() {
             var expr, cont;
@@ -868,7 +894,7 @@ var Model = function(view) {
                         expr = read(tokenizer);
 
                         if (expr === EOF) {
-                            view.enable();
+                            this.evalmodeoff();
                         } else {
                             return evl(expr, env, cont);
                         }
@@ -878,26 +904,53 @@ var Model = function(view) {
                 }
             } catch (e) {
                 view.print(exceptiontostring(e));
-                view.enable();
+                this.evalmodeoff();
             }
         };
 
         // Tell the browser to pass the first thunk (and the view) to
         // timeoutcallback as soon as possible.  (FIXME:  IE < 9 doesn't
         // understand extra args to window.setTimeout.)
-        window.setTimeout(timeoutcallback, 0, firstthunk, view);
+        window.setTimeout(timeoutcallback, 0, firstthunk, view, this);
+    };
+
+    this.setcontroller = function(innercontroller) {
+        if (controller) {
+            throw new Error("setcontroller called twice");
+        }
+
+        controller = innercontroller;
+    };
+
+    // Puts the view and controller in "evaluating mode" (disabling the eval
+    // button and enabling the interrupt button):
+    this.evalmodeon = function() {
+        view.evalmodeon();
+        controller.evalmodeon();
+    };
+
+    this.evalmodeoff = function() {
+        view.evalmodeoff();
+        controller.evalmodeoff();
     };
 };
 
 window.main = function() {
-    var view, model, controller, listener;
+    var names, view, model, controller, listener;
 
-    view = new View(document, "output", "input", "evalbutton");
+    // These names look redundant but storing them like this allows them to be
+    // changed here:
+    names = {input: "input", output: "output", evalbutton: "evalbutton",
+        interruptbutton: "interruptbutton"};
+
+    view = new View(document, names);
     model = new Model(view);
-    controller = new Controller(model, document, "input");
+    controller = new Controller(model, document, names);
+
+    model.setcontroller(controller);
 
     listener = function(ev) {
-        var evalbuttonpressed, evalkeypressed;
+        var evalbuttonpressed, evalkeypressed, interruptbuttonpressed;
 
         evalbuttonpressed = ev.type == "click" && ev.target.id == "evalbutton";
 
@@ -906,10 +959,17 @@ window.main = function() {
             ev.shiftKey &&
             !(ev.altGraphKey || ev.altKey || ev.ctrlKey || ev.metaKey);
 
+        interruptbuttonpressed = ev.type == "click" &&
+            ev.target.id == "interruptbutton";
+
         if (evalbuttonpressed || evalkeypressed) {
             ev.preventDefault();
             ev.stopPropagation();
             controller.evl();
+        } else if (interruptbuttonpressed) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            controller.interrupt();
         }
     };
 

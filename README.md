@@ -39,8 +39,6 @@ Lots of stuff to do:
 - Variadic functions.  (Probably with `(lambda args body)` syntax.)
 - Dotted lists.  (These are never used in *The Little Schemer*.  Maybe make
   them optional?)
-- Add an "interrupt" button. (Most of the necessary work is already done since
-  evaluation is done incrementally inside a `setTimeout` callback.)
 - Double check that no calls in tail position unnecessarily allocate
   continuations.
 - Allow `lambda`, `letcc`, etc. to take multi-expression bodies.  (`cond`
