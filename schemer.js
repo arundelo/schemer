@@ -726,15 +726,48 @@ Env.prototype.set = function(name, val) {
     }
 };
 
+var View = function(outputtextarea, evalbutton, bodystyle) {
+    var sep;
+
+    this.clear = function() {
+        outputtextarea.value = "";
+        sep = "";
+    };
+
+    // Prints a string (separated from the previous one with a blank line):
+    this.print = function(str) {
+        outputtextarea.value += sep + str;
+        sep = "\n\n";
+    };
+
+    this.disable = function() {
+        // FIXME:  On the browsers I've tried, disabling the button and
+        // changing the mouse cursor don't take effect until the next time
+        // control passes back to the event loop.  Brief investigation says
+        // that to get this to work I'll need to use setTimeout.
+        evalbutton.disabled = true;
+        bodystyle.cursor = "wait";
+    };
+
+    this.enable = function() {
+        evalbutton.disabled = false;
+        bodystyle.cursor = "default";
+    };
+
+    this.clear();
+};
+
 window.main = function() {
     var inputtextarea = document.getElementById("input"),
-        outputtextarea = document.getElementById("output"),
-        button = document.getElementById("button"),
+        evalbutton = document.getElementById("button"),
+        view,
         listener;
 
+    view = new View(document.getElementById("output"), evalbutton,
+        document.body.style);
+
     listener = function(ev) {
-        var sep, printtotextarea, tokenizer, env, expr, cont, thunk, e,
-            errormsg;
+        var tokenizer, env, expr, cont, thunk, e, errormsg;
 
         if (ev.type == "keydown" && ev.keyCode == KEYCODEENTER && ev.shiftKey
                 && !(ev.altGraphKey || ev.altKey || ev.ctrlKey || ev.metaKey)
@@ -746,25 +779,9 @@ window.main = function() {
             return; // WE ARE NOT INTERESTED IN THIS EVENT.
         }
 
-        sep = "";
-
-        // FIXME:  Factor this out.
-        printtotextarea = function(str) {
-            outputtextarea.value += sep + str;
-            sep = "\n\n";
-        };
-
         tokenizer = new Tokenizer(inputtextarea.value);
-        outputtextarea.value = "";
+        view.clear();
         env = new Env(builtins);
-
-        // FIXME:  At least on the browser I'm using now (old version of
-        // Chrome) disabling the button and changing the mouse cursor don't
-        // take effect until the next time control passes back to the event
-        // loop.  Brief investigation says that to get this to work I'll need
-        // to use setTimeout.
-        button.disabled = true;
-        document.body.style.cursor = "wait";
 
         try {
             // This is the main loop.  It's just a read-eval-print loop but
@@ -774,16 +791,17 @@ window.main = function() {
             expr = read(tokenizer);
 
             if (expr !== EOF) {
+                view.disable();
+
                 cont = function(val) {
                     var expr;
 
-                    printtotextarea(lisptostring(val));
+                    view.print(lisptostring(val));
 
                     expr = read(tokenizer);
 
                     if (expr === EOF) {
-                        document.body.style.cursor = "default";
-                        button.disabled = false;
+                        view.enable();
                     } else {
                         return evl(expr, env, cont);
                     }
@@ -803,9 +821,8 @@ window.main = function() {
                 // Annoying but not worth it to code around now.
                 errormsg += "\n" + e.stack;
             }
-            printtotextarea(errormsg);
-            document.body.style.cursor = "default";
-            button.disabled = false;
+            view.print(errormsg);
+            view.enable();
         }
     };
 
