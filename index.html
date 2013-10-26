@@ -96,6 +96,21 @@ textarea {font-family: monospace;}
     (outercont 'mumble)
     (alert 'This 'should 'not 'be 'reached))
   'mumble)
+
+; Spins a delay loop for a given amount of seconds.  (This is for
+; testing.)
+(define busy-wait
+  (lambda (secs)
+    ((lambda (stop-milliseconds loop)
+       (begin
+         (set! loop
+           (lambda ()
+             (if (&gt; (current-milliseconds) stop-milliseconds)
+               'done
+               (loop))))
+         (loop)))
+     (+ (current-milliseconds) (* secs 1000))
+     'placeholder)))
 </textarea>
 
 <p>
