@@ -259,6 +259,14 @@ var builtins = {
         }
     },
 
+    "*": function builtin_times(args) {
+        if (args === EMPTYLIST) {
+            return 1;
+        } else {
+            return args.car * builtin_times(args.cdr);
+        }
+    },
+
     list: function builtin_list(args) {
         return args;
     },
