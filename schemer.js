@@ -1,5 +1,5 @@
-// A lisp implementation inspired by the one used in The Little Schemer and The
-// Seasoned Schemer.
+// A lisp implementation.  Features and function names are inspired by the
+// Scheme dialect used in The Little Schemer and The Seasoned Schemer.
 
 "use strict";
 
@@ -890,6 +890,7 @@ window.main = function() {
         window.setTimeout(timeoutcallback, 0, firstthunk, view);
     };
 
+    // FIXME: IE < 9 doesn't have addEventListener.
     document.body.addEventListener("keydown", listener, false);
     document.body.addEventListener("click", listener, false);
 };
