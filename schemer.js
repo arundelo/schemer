@@ -823,28 +823,26 @@ var timeoutcallback = function(thunk, view) {
     }
 };
 
-window.main = function() {
-    var inputtextarea = document.getElementById("input"),
-        env = new Env(shallowcopy(builtins)),
-        view,
-        listener;
+var Controller = function(model, document, inputname) {
+    var inputtextarea = document.getElementById(inputname);
 
-    view = new View(document, "output", "input", "evalbutton");
+    // Asynchronously evaluates the expressions in the input textarea and puts
+    // the results in the output textarea:
+    this.evl = function() {
+        model.evl(inputtextarea.value);
+    };
+};
 
-    listener = function(ev) {
-        var tokenizer, firstthunk, e;
+var Model = function(view) {
+    var env = new Env(shallowcopy(builtins));
 
-        if (ev.type == "keydown" && ev.keyCode == KEYCODEENTER && ev.shiftKey
-                && !(ev.altGraphKey || ev.altKey || ev.ctrlKey || ev.metaKey)
-            || ev.type == "click" && ev.target.id == "evalbutton"
-        ) {
-            ev.preventDefault();
-            ev.stopPropagation();
-        } else {
-            return; // WE ARE NOT INTERESTED IN THIS EVENT.
-        }
+    // Asynchronously evaluates the expressions in the given string and puts
+    // the results in the output textarea:
+    this.evl = function(str) {
+        var tokenizer = new Tokenizer(str),
+            firstthunk,
+            e;
 
-        tokenizer = new Tokenizer(inputtextarea.value);
         view.clear();
         view.disable();
 
@@ -888,6 +886,31 @@ window.main = function() {
         // timeoutcallback as soon as possible.  (FIXME:  IE < 9 doesn't
         // understand extra args to window.setTimeout.)
         window.setTimeout(timeoutcallback, 0, firstthunk, view);
+    };
+};
+
+window.main = function() {
+    var view, model, controller, listener;
+
+    view = new View(document, "output", "input", "evalbutton");
+    model = new Model(view);
+    controller = new Controller(model, document, "input");
+
+    listener = function(ev) {
+        var evalbuttonpressed, evalkeypressed;
+
+        evalbuttonpressed = ev.type == "click" && ev.target.id == "evalbutton";
+
+        evalkeypressed = ev.type == "keydown" &&
+            ev.keyCode == KEYCODEENTER &&
+            ev.shiftKey &&
+            !(ev.altGraphKey || ev.altKey || ev.ctrlKey || ev.metaKey);
+
+        if (evalbuttonpressed || evalkeypressed) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            controller.evl();
+        }
     };
 
     // FIXME: IE < 9 doesn't have addEventListener.
