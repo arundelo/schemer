@@ -829,14 +829,14 @@ window.main = function() {
         view,
         listener;
 
-    view = new View(document, "output", "input", "button");
+    view = new View(document, "output", "input", "evalbutton");
 
     listener = function(ev) {
         var tokenizer, firstthunk, e;
 
         if (ev.type == "keydown" && ev.keyCode == KEYCODEENTER && ev.shiftKey
                 && !(ev.altGraphKey || ev.altKey || ev.ctrlKey || ev.metaKey)
-            || ev.type == "click" && ev.target.id == "button"
+            || ev.type == "click" && ev.target.id == "evalbutton"
         ) {
             ev.preventDefault();
             ev.stopPropagation();
