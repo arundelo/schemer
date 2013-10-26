@@ -169,15 +169,15 @@ var Pair = function(car, cdr) {
 // Returns a string representation of a list without the open paren:
 Pair.prototype.toStringHelper = function() {
     if (this.cdr === EMPTYLIST) {
-        return this.car + ")";
+        return lisptostring(this.car) + ")";
     } else if (this.cdr instanceof Pair) {
-        return this.car + " " + this.cdr.toStringHelper();
+        return lisptostring(this.car) + " " + this.cdr.toStringHelper();
     } else {
         // This implementation doesn't understand improper lists and should
         // never produce them:
         throw new Error(
             "Not your fault: Improper list found: (" +
-                this.car + " . " + this.cdr + ")");
+                lisptostring(this.car) + " . " + lisptostring(this.cdr) + ")");
     }
 };
 
