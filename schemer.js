@@ -245,7 +245,9 @@ Closure.prototype.toString = function() {
 // list of their (already evaluated) lisp arguments.  For simplicity, they
 // return a value (rather than taking a continuation and returning a thunk), so
 // some of them do grow the JavaScript stack, but only a limited amount.
-// (E.g., builtin_plus recurses once for each argument.)
+// (E.g., builtin_plus recurses once for each argument.)  FIXME:  They should
+// check how many arguments they're called with and that they're the right
+// types.
 var builtins = {
     "+": function builtin_plus(args) {
         if (args === EMPTYLIST) {
@@ -260,9 +262,14 @@ var builtins = {
     },
 
     cons: function builtin_cons(args) {
-        // FIXME:  These built-in functions should check how many arguments
-        // they have and that they're the right types.
-        return new Pair(args.car, args.cdr.car);
+        var a = args.car,
+            d = args.cdr.car;
+        if (!(d === EMPTYLIST || d instanceof Pair)) {
+            throw new Error(
+                "cons's second argument must be a list, not " +
+                    lisptostring(d));
+        }
+        return new Pair(a, d);
     },
 
     car: function builtin_car(args) {
