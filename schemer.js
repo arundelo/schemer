@@ -1,4 +1,4 @@
-// A lisp implementation.  Features and function names are inspired by the
+// A Lisp implementation.  Features and function names are inspired by the
 // Scheme dialect used in The Little Schemer and The Seasoned Schemer.
 
 "use strict";
@@ -244,7 +244,7 @@ Closure.prototype.toString = function() {
 };
 
 // Built-in functions.  These all take a single JavaScript argument that is a
-// list of their (already evaluated) lisp arguments.  For simplicity, they
+// list of their (already evaluated) Lisp arguments.  For simplicity, they
 // return a value (rather than taking a continuation and returning a thunk), so
 // some of them do grow the JavaScript stack, but only a limited amount.
 // (E.g., builtin_plus recurses once for each argument.)  FIXME:  They should
@@ -560,7 +560,7 @@ var operators = {
     }
 };
 
-// Takes a lisp expression, an environment, and a continuation; returns a thunk
+// Takes a Lisp expression, an environment, and a continuation; returns a thunk
 // that when called evaluates the expression, passes the value to the
 // continuation, and returns whatever the continuation returns.  (This is
 // called "evl" instead of "eval" because "use strict" doesn't allow binding to
@@ -677,10 +677,10 @@ var lisptostring = function(val) {
         if (firstchar === "#" || firstchar === "(") {
             return str;
         } else {
-            throw new Error("Not a lisp value: " + val);
+            throw new Error("Not a Lisp value: " + val);
         }
     default:
-        throw new Error("Not a lisp value: " + val);
+        throw new Error("Not a Lisp value: " + val);
     }
 };
 
