@@ -726,8 +726,18 @@ Env.prototype.set = function(name, val) {
     }
 };
 
-var View = function(outputtextarea, evalbutton, bodystyle) {
-    var sep;
+var View = function(document, outputname, inputname, evalbuttonname) {
+    var outputtextarea = document.getElementById(outputname),
+        evalbutton = document.getElementById(evalbuttonname),
+        styles,
+        setcursors,
+        sep;
+
+    styles = [
+        document.body.style,
+        outputtextarea.style,
+        document.getElementById(inputname).style
+    ];
 
     this.clear = function() {
         outputtextarea.value = "";
@@ -740,18 +750,24 @@ var View = function(outputtextarea, evalbutton, bodystyle) {
         sep = "\n\n";
     };
 
+    setcursors = function(cursorstyle) {
+        for (var i = 0; i < styles.length; i++) {
+            styles[i].cursor = cursorstyle;
+        }
+    };
+
     this.disable = function() {
         // FIXME:  On the browsers I've tried, disabling the button and
         // changing the mouse cursor don't take effect until the next time
         // control passes back to the event loop.  Brief investigation says
         // that to get this to work I'll need to use setTimeout.
         evalbutton.disabled = true;
-        bodystyle.cursor = "wait";
+        setcursors("wait");
     };
 
     this.enable = function() {
         evalbutton.disabled = false;
-        bodystyle.cursor = "default";
+        setcursors("default");
     };
 
     this.clear();
@@ -775,10 +791,7 @@ window.main = function() {
         view,
         listener;
 
-    view = new View(
-        document.getElementById("output"),
-        document.getElementById("button"),
-        document.body.style);
+    view = new View(document, "output", "input", "button");
 
     listener = function(ev) {
         var tokenizer, expr, cont, thunk, e, errormsg;
