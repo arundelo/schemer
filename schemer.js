@@ -757,9 +757,22 @@ var View = function(outputtextarea, evalbutton, bodystyle) {
     this.clear();
 };
 
+var shallowcopy = function(obj) {
+    var copy = {};
+
+    for (var key in obj) {
+        if (obj.hasOwnProperty(key)) {
+            copy[key] = obj[key];
+        };
+    };
+
+    return copy;
+};
+
 window.main = function() {
     var inputtextarea = document.getElementById("input"),
         evalbutton = document.getElementById("button"),
+        env = new Env(shallowcopy(builtins)),
         view,
         listener;
 
@@ -767,7 +780,7 @@ window.main = function() {
         document.body.style);
 
     listener = function(ev) {
-        var tokenizer, env, expr, cont, thunk, e, errormsg;
+        var tokenizer, expr, cont, thunk, e, errormsg;
 
         if (ev.type == "keydown" && ev.keyCode == KEYCODEENTER && ev.shiftKey
                 && !(ev.altGraphKey || ev.altKey || ev.ctrlKey || ev.metaKey)
@@ -781,7 +794,6 @@ window.main = function() {
 
         tokenizer = new Tokenizer(inputtextarea.value);
         view.clear();
-        env = new Env(builtins);
 
         try {
             // This is the main loop.  It's just a read-eval-print loop but
