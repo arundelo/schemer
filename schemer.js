@@ -757,10 +757,6 @@ var View = function(document, outputname, inputname, evalbuttonname) {
     };
 
     this.disable = function() {
-        // FIXME:  On the browsers I've tried, disabling the button and
-        // changing the mouse cursor don't take effect until the next time
-        // control passes back to the event loop.  Brief investigation says
-        // that to get this to work I'll need to use setTimeout.
         evalbutton.disabled = true;
         setcursors("wait");
     };
@@ -785,6 +781,48 @@ var shallowcopy = function(obj) {
     return copy;
 };
 
+var exceptiontostring = function(e) {
+    var errormsg = e.toString();
+
+    if (e.stack) {
+        // In Firefox the stack trace does not include the error message but in
+        // Chrome it does, so it'll be repeated.  Annoying but not worth it to
+        // code around now.
+        errormsg += "\n" + e.stack;
+    }
+
+    return errormsg;
+};
+
+var timeoutcallback = function(thunk, view) {
+    var count = 0,
+        e;
+
+    try {
+        // This is the main loop (but see also cont() in thunk() in
+        // window.main()).  It's just a read-eval-print loop but expressed in
+        // trampolined continuation-passing style and encapsulated in
+        // timeoutcallback so it can be run asynchronously.  Thunks and
+        // continuations both always return another thunk or nothing if there's
+        // nothing left to do.
+        while (thunk) {
+            if (count < 500) {
+                // One more step of evaluation:
+                thunk = thunk();
+                count++;
+            } else {
+                // Let the event loop breathe by setting up the next timeout
+                // callback invocation then EXITING THIS ONE:
+                window.setTimeout(timeoutcallback, 0, thunk, view);
+                return;
+            }
+        }
+    } catch (e) {
+        view.print(exceptiontostring(e));
+        view.enable();
+    }
+};
+
 window.main = function() {
     var inputtextarea = document.getElementById("input"),
         env = new Env(shallowcopy(builtins)),
@@ -794,7 +832,7 @@ window.main = function() {
     view = new View(document, "output", "input", "button");
 
     listener = function(ev) {
-        var tokenizer, expr, cont, thunk, e, errormsg;
+        var tokenizer, firstthunk, e;
 
         if (ev.type == "keydown" && ev.keyCode == KEYCODEENTER && ev.shiftKey
                 && !(ev.altGraphKey || ev.altKey || ev.ctrlKey || ev.metaKey)
@@ -808,48 +846,48 @@ window.main = function() {
 
         tokenizer = new Tokenizer(inputtextarea.value);
         view.clear();
+        view.disable();
 
-        try {
-            // This is the main loop.  It's just a read-eval-print loop but
-            // expressed in trampolined continuation-passing style.  Both
-            // thunks and continuations always return another thunk or nothing
-            // if there's nothing left to do.
-            expr = read(tokenizer);
+        firstthunk = function() {
+            var expr, cont;
 
-            if (expr !== EOF) {
-                view.disable();
+            try {
+                // The main loop is in timeoutcallback, but cont() below is an
+                // important part of it.  It's just a read-eval-print loop but
+                // expressed in trampolined continuation-passing style and
+                // encapsulated in timeoutcallback so it can be run
+                // asynchronously.  Both thunks and continuations always return
+                // another thunk or nothing if there's nothing left to do.
+                expr = read(tokenizer);
 
-                cont = function(val) {
-                    var expr;
+                if (expr !== EOF) {
 
-                    view.print(lisptostring(val));
+                    cont = function(val) {
+                        var expr;
 
-                    expr = read(tokenizer);
+                        view.print(lisptostring(val));
 
-                    if (expr === EOF) {
-                        view.enable();
-                    } else {
-                        return evl(expr, env, cont);
-                    }
-                };
+                        expr = read(tokenizer);
 
-                thunk = evl(expr, env, cont);
+                        if (expr === EOF) {
+                            view.enable();
+                        } else {
+                            return evl(expr, env, cont);
+                        }
+                    };
 
-                while (thunk) {
-                    thunk = thunk();
+                    return evl(expr, env, cont);
                 }
+            } catch (e) {
+                view.print(exceptiontostring(e));
+                view.enable();
             }
-        } catch (e) {
-            errormsg = e.toString();
-            if (e.stack) {
-                // In Firefox the stack trace does not include the error
-                // message but in Chrome it does, so it'll be repeated.
-                // Annoying but not worth it to code around now.
-                errormsg += "\n" + e.stack;
-            }
-            view.print(errormsg);
-            view.enable();
-        }
+        };
+
+        // Tell the browser to pass the first thunk (and the view) to
+        // timeoutcallback as soon as possible.  (FIXME:  IE < 9 doesn't
+        // understand extra args to window.setTimeout.)
+        window.setTimeout(timeoutcallback, 0, firstthunk, view);
     };
 
     document.body.addEventListener("keydown", listener, false);
