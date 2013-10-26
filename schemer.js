@@ -771,12 +771,13 @@ var shallowcopy = function(obj) {
 
 window.main = function() {
     var inputtextarea = document.getElementById("input"),
-        evalbutton = document.getElementById("button"),
         env = new Env(shallowcopy(builtins)),
         view,
         listener;
 
-    view = new View(document.getElementById("output"), evalbutton,
+    view = new View(
+        document.getElementById("output"),
+        document.getElementById("button"),
         document.body.style);
 
     listener = function(ev) {
