@@ -728,6 +728,7 @@ Env.prototype.set = function(name, val) {
 
 var View = function(document, names) {
     var outputtextarea = document.getElementById(names.output),
+        evalmode = false,
         styles,
         setcursors,
         sep;
@@ -755,12 +756,23 @@ var View = function(document, names) {
         }
     };
 
-    this.evalmodeon = function() {
-        setcursors("wait");
+    // With a true argument, puts the view in "evaluating mode" (hourglassing
+    // the mouse cursor).  With a false argument, does the opposite.  This and
+    // the counterpart in Controller should always be called at the same time,
+    // so they are called directly only by Model's setevalmode, and Model's
+    // setevalmode is the one that most calls are made to.
+    this.setevalmode = function(flag) {
+        evalmode = flag;
+
+        if (flag) {
+            setcursors("wait");
+        } else {
+            setcursors("default");
+        }
     };
 
-    this.evalmodeoff = function() {
-        setcursors("default");
+    this.getevalmode = function() {
+        return evalmode;
     };
 
     this.clear();
@@ -806,7 +818,7 @@ var timeoutcallback = function(thunk, view, model) {
             if (model.interrupted) {
                 // THE USER TOLD US TO QUIT.
                 view.print("INTERRUPTED");
-                model.evalmodeoff();
+                model.setevalmode(false);
                 model.interrupted = false;
                 return;
             } else if (count < 500) {
@@ -822,14 +834,15 @@ var timeoutcallback = function(thunk, view, model) {
         }
     } catch (e) {
         view.print(exceptiontostring(e));
-        model.evalmodeoff();
+        model.setevalmode(false);
     }
 };
 
 var Controller = function(model, document, names) {
     var inputtextarea = document.getElementById(names.input),
         evalbutton = document.getElementById(names.evalbutton),
-        interruptbutton = document.getElementById(names.interruptbutton);
+        interruptbutton = document.getElementById(names.interruptbutton),
+        evalmode = false;
 
     interruptbutton.disabled = true;
 
@@ -843,21 +856,32 @@ var Controller = function(model, document, names) {
         model.interrupted = true;
     };
 
-    // Puts the controller in "evaluating mode" (disabling the eval button and
-    // enabling the interrupt button):
-    this.evalmodeon = function() {
-        evalbutton.disabled = true;
-        interruptbutton.disabled = false;
+    // With a true argument, puts the controller in "evaluating mode"
+    // (disabling the eval button and enabling the interrupt button).  With a
+    // false argument, does the opposite.  This and the counterpart in View
+    // should always be called at the same time, so they are called directly
+    // only by Model's setevalmode, and Model's setevalmode is the one that
+    // most calls are made to.
+    this.setevalmode = function(flag) {
+        evalmode = flag;
+
+        if (flag) {
+            evalbutton.disabled = true;
+            interruptbutton.disabled = false;
+        } else {
+            evalbutton.disabled = false;
+            interruptbutton.disabled = true;
+        }
     };
 
-    this.evalmodeoff = function() {
-        evalbutton.disabled = false;
-        interruptbutton.disabled = true;
+    this.getevalmode = function() {
+        return evalmode;
     };
 };
 
 var Model = function(view) {
     var env = new Env(shallowcopy(builtins)),
+        evalmode = false,
         controller;
 
     this.interrupted = false;
@@ -871,7 +895,7 @@ var Model = function(view) {
             e;
 
         view.clear();
-        model.evalmodeon();
+        model.setevalmode(true);
 
         firstthunk = function() {
             var expr, cont;
@@ -895,7 +919,7 @@ var Model = function(view) {
                         expr = read(tokenizer);
 
                         if (expr === EOF) {
-                            model.evalmodeoff();
+                            model.setevalmode(false);
                         } else {
                             return evl(expr, env, cont);
                         }
@@ -905,7 +929,7 @@ var Model = function(view) {
                 }
             } catch (e) {
                 view.print(exceptiontostring(e));
-                model.evalmodeoff();
+                model.setevalmode(false);
             }
         };
 
@@ -923,16 +947,17 @@ var Model = function(view) {
         controller = innercontroller;
     };
 
-    // Puts the view and controller in "evaluating mode" (disabling the eval
-    // button and enabling the interrupt button):
-    this.evalmodeon = function() {
-        view.evalmodeon();
-        controller.evalmodeon();
+    // With a true argument, puts the view and controller in "evaluating mode"
+    // (hourglassing the mouse cursor, disabling the eval button, and enabling
+    // the interrupt button).  With a false argument, does the opposite.
+    this.setevalmode = function(flag) {
+        evalmode = flag;
+        view.setevalmode(flag);
+        controller.setevalmode(flag);
     };
 
-    this.evalmodeoff = function() {
-        view.evalmodeoff();
-        controller.evalmodeoff();
+    this.getevalmode = function() {
+        return evalmode;
     };
 };
 
@@ -964,13 +989,19 @@ window.main = function() {
             ev.target.id == "interruptbutton";
 
         if (evalbuttonpressed || evalkeypressed) {
+            // This is our event so don't let it bubble up to the browser ...
             ev.preventDefault();
             ev.stopPropagation();
-            controller.evl();
+            // ... but take action only if we're in the right mode:
+            if (!controller.getevalmode()) {
+                controller.evl();
+            }
         } else if (interruptbuttonpressed) {
             ev.preventDefault();
             ev.stopPropagation();
-            controller.interrupt();
+            if (controller.getevalmode()) {
+                controller.interrupt();
+            }
         }
     };
 
