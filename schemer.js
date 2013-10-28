@@ -891,14 +891,13 @@ var Model = function(view) {
     // the results in the output textarea:
     this.evl = function(str) {
         var tokenizer = new Tokenizer(str),
-            firstthunk,
-            e;
+            firstthunk;
 
         view.clear();
         this.setevalmode(true);
 
         firstthunk = function() {
-            var expr, cont;
+            var expr, cont, e;
 
             try {
                 // The main loop is in timeoutcallback, but cont() below is an
