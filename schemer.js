@@ -803,41 +803,6 @@ var exceptiontostring = function(e) {
     return errormsg;
 };
 
-var timeoutcallback = function(thunk, view, model) {
-    var count = 0,
-        e;
-
-    try {
-        // This is the main loop (but see also cont() in thunk() in
-        // window.main()).  It's just a read-eval-print loop but expressed in
-        // trampolined continuation-passing style and encapsulated in
-        // timeoutcallback so it can be run asynchronously.  Thunks and
-        // continuations both always return another thunk or nothing if there's
-        // nothing left to do.
-        while (thunk) {
-            if (model.interrupted) {
-                // THE USER TOLD US TO QUIT.
-                view.print("INTERRUPTED");
-                model.setevalmode(false);
-                model.interrupted = false;
-                return;
-            } else if (count < 500) {
-                // One more step of evaluation:
-                thunk = thunk();
-                count++;
-            } else {
-                // Let the event loop breathe by setting up the next timeout
-                // callback invocation then EXITING THIS ONE:
-                window.setTimeout(timeoutcallback, 0, thunk, view, model);
-                return;
-            }
-        }
-    } catch (e) {
-        view.print(exceptiontostring(e));
-        model.setevalmode(false);
-    }
-};
-
 var Controller = function(model, document, names) {
     var inputtextarea = document.getElementById(names.input),
         evalbutton = document.getElementById(names.evalbutton),
@@ -883,59 +848,107 @@ var Model = function(view) {
     var that = this,
         env = new Env(shallowcopy(builtins)),
         evalmode = false,
+        thunk,
         controller;
 
     this.interrupted = false;
 
+    // Calls f in a try structure and returns the result.  On exception, prints
+    // the exception, exits eval mode, and returns nothing.
+    this.protectedcall = function(f) {
+        var e;
+
+        try {
+            return f();
+        } catch (e) {
+            view.print(exceptiontostring(e));
+            this.setevalmode(false);
+        }
+    };
+
     // Asynchronously evaluates the expressions in the given string and puts
     // the results in the output textarea:
     this.evl = function(str) {
-        var tokenizer = new Tokenizer(str),
-            firstthunk;
+        var tokenizer = new Tokenizer(str);
 
         view.clear();
         this.setevalmode(true);
 
-        firstthunk = function() {
+        // This is the first thunk:
+        thunk = function() {
             var expr, cont, e;
 
-            try {
-                // The main loop is in timeoutcallback, but cont() below is an
-                // important part of it.  It's just a read-eval-print loop but
-                // expressed in trampolined continuation-passing style and
-                // encapsulated in timeoutcallback so it can be run
-                // asynchronously.  Both thunks and continuations always return
-                // another thunk or nothing if there's nothing left to do.
-                expr = read(tokenizer);
+            return that.protectedcall(
+                function() {
+                    // The main loop is in timeoutcallback, but cont() below is
+                    // an important part of it.  It's just a read-eval-print
+                    // loop but expressed in trampolined continuation-passing
+                    // style and encapsulated in timeoutcallback so it can be
+                    // run asynchronously.  Both thunks and continuations
+                    // always return another thunk or nothing if there's
+                    // nothing left to do.
+                    expr = read(tokenizer);
 
-                if (expr !== EOF) {
+                    if (expr !== EOF) {
+                        cont = function(val) {
+                            var expr;
 
-                    cont = function(val) {
-                        var expr;
+                            view.print(lisptostring(val));
 
-                        view.print(lisptostring(val));
+                            expr = read(tokenizer);
 
-                        expr = read(tokenizer);
+                            if (expr === EOF) {
+                                that.setevalmode(false);
+                            } else {
+                                return evl(expr, env, cont);
+                            }
+                        };
 
-                        if (expr === EOF) {
-                            that.setevalmode(false);
-                        } else {
-                            return evl(expr, env, cont);
-                        }
-                    };
-
-                    return evl(expr, env, cont);
+                        return evl(expr, env, cont);
+                    }
                 }
-            } catch (e) {
-                view.print(exceptiontostring(e));
-                that.setevalmode(false);
-            }
+            );
         };
 
-        // Tell the browser to pass the first thunk (and the view) to
-        // timeoutcallback as soon as possible.  (FIXME:  IE < 9 doesn't
-        // understand extra args to window.setTimeout.)
-        window.setTimeout(timeoutcallback, 0, firstthunk, view, this);
+        // Tell the browser to call timeoutcallback as soon as possible.
+        // (timeoutcallback will call thunk.)  FIXME: IE < 9 doesn't support
+        // Function.prototype.bind.
+        window.setTimeout(this.timeoutcallback.bind(this), 0);
+    };
+
+    this.timeoutcallback = function() {
+        var that = this,
+            count = 0;
+
+        that.protectedcall(
+            function() {
+                // This is the main loop (but see also cont() in thunk() in
+                // evl()).  It's just a read-eval-print loop but expressed in
+                // trampolined continuation-passing style and encapsulated in
+                // timeoutcallback so it can be run asynchronously.  Thunks and
+                // continuations both always return another thunk or nothing if
+                // there's nothing left to do.
+                while (thunk) {
+                    if (that.interrupted) {
+                        // THE USER TOLD US TO QUIT.
+                        view.print("INTERRUPTED");
+                        that.setevalmode(false);
+                        that.interrupted = false;
+                        return;
+                    } else if (count < 500) {
+                        // One more step of evaluation:
+                        thunk = thunk();
+                        count++;
+                    } else {
+                        // Let the event loop breathe by setting up the next
+                        // timeout callback invocation ...
+                        window.setTimeout(that.timeoutcallback.bind(that), 0);
+                        // ....then EXITING THIS ONE:
+                        return;
+                    }
+                }
+            }
+        );
     };
 
     this.setcontroller = function(innercontroller) {
