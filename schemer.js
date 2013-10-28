@@ -880,7 +880,8 @@ var Controller = function(model, document, names) {
 };
 
 var Model = function(view) {
-    var env = new Env(shallowcopy(builtins)),
+    var that = this,
+        env = new Env(shallowcopy(builtins)),
         evalmode = false,
         controller;
 
@@ -889,13 +890,12 @@ var Model = function(view) {
     // Asynchronously evaluates the expressions in the given string and puts
     // the results in the output textarea:
     this.evl = function(str) {
-        var model = this,
-            tokenizer = new Tokenizer(str),
+        var tokenizer = new Tokenizer(str),
             firstthunk,
             e;
 
         view.clear();
-        model.setevalmode(true);
+        this.setevalmode(true);
 
         firstthunk = function() {
             var expr, cont;
@@ -919,7 +919,7 @@ var Model = function(view) {
                         expr = read(tokenizer);
 
                         if (expr === EOF) {
-                            model.setevalmode(false);
+                            that.setevalmode(false);
                         } else {
                             return evl(expr, env, cont);
                         }
@@ -929,14 +929,14 @@ var Model = function(view) {
                 }
             } catch (e) {
                 view.print(exceptiontostring(e));
-                model.setevalmode(false);
+                that.setevalmode(false);
             }
         };
 
         // Tell the browser to pass the first thunk (and the view) to
         // timeoutcallback as soon as possible.  (FIXME:  IE < 9 doesn't
         // understand extra args to window.setTimeout.)
-        window.setTimeout(timeoutcallback, 0, firstthunk, view, model);
+        window.setTimeout(timeoutcallback, 0, firstthunk, view, this);
     };
 
     this.setcontroller = function(innercontroller) {
