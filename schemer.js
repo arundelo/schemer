@@ -187,6 +187,28 @@ Pair.prototype.toString = function() {
     return "(" + this.toStringHelper();
 };
 
+// A placeholder value to use as the result of an expression whose value is
+// undefined and should not be used.  Among other things, this lets the main
+// loop refrain from printing something every time there's a define.  More
+// generally, the idea is that if an expression's result is undefined and that
+// result is not thrown away, there should be an error.  Currently there is not
+// enough error checking so it is possible to make data structures that include
+// undefined values (e.g., "(list (set! foo 'bar))").
+var Undeffed = function(source) {
+    this.source = source;
+};
+
+// A quick way to make an error about how an undefined value was used.  FIXME:
+// This should be used in more places (but ideally that can be combined with
+// more abstracted error handling).
+Undeffed.prototype.error = function(site) {
+    return new Error(site + ": (" + this.source + " ...) has no value");
+};
+
+Undeffed.prototype.toString = function() {
+    return "#[undefined: " + this.source + "]";
+};
+
 // Returns the list whose open paren has already been read:
 var readlist = function(tokenizer) {
     var tok = tokenizer.get(),
@@ -274,7 +296,11 @@ var builtins = {
     cons: function builtin_cons(args) {
         var a = args.car,
             d = args.cdr.car;
-        if (!(d === EMPTYLIST || d instanceof Pair)) {
+        if (a instanceof Undeffed) {
+            throw a.error("cons");
+        } else if (d instanceof Undeffed) {
+            throw d.error("cons");
+        } else if (!(d === EMPTYLIST || d instanceof Pair)) {
             throw new Error(
                 "cons's second argument must be a list, not " +
                     lisptostring(d));
@@ -409,6 +435,9 @@ var operators = {
 
             return function() {
                 var ifcont = function(condres) {
+                    if (condres instanceof Undeffed) {
+                        throw condres.error("if");
+                    }
                     return evl(argsarr[condres ? 1 : 2], env, cont);
                 };
 
@@ -470,7 +499,7 @@ var operators = {
             return function() {
                 var assign = function(val) {
                     env.globalenv.map[name] = val;
-                    return cont(val);
+                    return cont(new Undeffed("define"));
                 };
 
                 return evl(valexpr, env, assign);
@@ -522,7 +551,7 @@ var operators = {
             return function() {
                 var assign = function(val) {
                     env.set(name, val);
-                    return cont(val);
+                    return cont(new Undeffed("set!"));
                 };
 
                 return evl(valexpr, env, assign);
@@ -893,7 +922,9 @@ var Model = function(view) {
                         cont = function(val) {
                             var expr;
 
-                            view.print(lisptostring(val));
+                            if (!(val instanceof Undeffed)) {
+                                view.print(lisptostring(val));
+                            }
 
                             expr = read(tokenizer);
 
