@@ -283,7 +283,7 @@ var Closure = function(lambdacdr, env) {
 
     if (!islist(formals) && !issymbol(formals)) {
         throw new Error(
-            "lambda's second argument must be a list or a symbol, not " +
+            "lambda's first argument must be a list or a symbol, not " +
                 formals);
     }
 
