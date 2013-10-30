@@ -17,8 +17,8 @@ var Tokenizer = function(inputstring, pos) {
     this.input = inputstring.replace(/\r\n|\n\r|\r/g, "\n");
     // pos is the position at which to start looking for the next token:
     this.pos = pos || 0;
-    // pos is the line currently being read.  (After get() is called, it will
-    // be the line the token was found on.)
+    // linenum is the line currently being read.  (After get() is called, it
+    // will be the line the token was found on.)
     this.linenum = 1;
     // atomchre (atom character r.e.) matches a character in an atom (any ASCII
     // character except for whitespace, controls, single quote, parentheses,
