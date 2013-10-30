@@ -205,62 +205,68 @@ Undeffed.prototype.toString = function() {
     return "#[undefined: " + this.source + "]";
 };
 
-// Returns the cdr of a dotted list whose dot has already been read.  (Dotted
-// lists are never used in The Little Schemer.  They break the Law of Cdr and
-// the Law of Cons.)
-var readdottedlistcdr = function(tokenizer) {
-    var expr, tok;
+var Parser = function(inputstring, pos) {
+    var that = this,
+        tokenizer = new Tokenizer(inputstring, pos);
 
-    expr = read(tokenizer, true);
-    tok = tokenizer.get();
-    if (tok === EOF) {
-        tokenizer.mythrow("Unexpected end of input");
-    } else if (tok !== ")") {
-        tokenizer.mythrow("Malformed dotted list");
-    }
+    // Returns the cdr of a dotted list whose dot has already been read.
+    // (Dotted lists are never used in The Little Schemer.  They break the Law
+    // of Cdr and the Law of Cons.)
+    var readdottedlistcdr = function() {
+        var expr, tok;
 
-    return expr;
-};
-
-// Returns the list whose open paren has already been read:
-var readlist = function(tokenizer) {
-    var tok = tokenizer.get();
-
-    if (tok === ")") {
-        return EMPTYLIST;
-    } else if (tok === ".") {
-        // Note that accepting a dot here means that the degenerate dotted list
-        // case of "(. foo)" is valid.  It is read as "foo".
-        return readdottedlistcdr(tokenizer);
-    } else {
-        tokenizer.unget();
-        return new Pair(read(tokenizer, true), readlist(tokenizer));
-    }
-};
-
-// Returns the internal representation (a string, number, Pair, or EMPTYLIST)
-// of the next expression in tokenizer, or EOF if there is no expression there.
-// If noeof is true, throws an exception instead of returning EOF.
-var read = function(tokenizer, noeof) {
-    var tok = tokenizer.get();
-
-    if (tok === EOF) {
-        if (noeof) {
+        expr = that.read(true);
+        tok = tokenizer.get();
+        if (tok === EOF) {
             tokenizer.mythrow("Unexpected end of input");
-        } else {
-            return EOF;
+        } else if (tok !== ")") {
+            tokenizer.mythrow("Malformed dotted list");
         }
-    } else if (tok === "(") {
-        return readlist(tokenizer);
-    } else if (tok === ")") {
-        tokenizer.mythrow("Unexpected \")\"");
-    } else if (tok === "'") {
-        return new Pair("quote", new Pair(read(tokenizer, true), EMPTYLIST));
-    } else if (tok === ".") {
-        tokenizer.mythrow("Unexpected \".\"");
-    } else {
-        return tok;
-    }
+
+        return expr;
+    };
+
+    // Returns the list whose open paren has already been read:
+    var readlist = function() {
+        var tok = tokenizer.get();
+
+        if (tok === ")") {
+            return EMPTYLIST;
+        } else if (tok === ".") {
+            // Note that accepting a dot here means that the degenerate dotted
+            // list case of "(. foo)" is valid.  It is read as "foo".
+            return readdottedlistcdr();
+        } else {
+            tokenizer.unget();
+            return new Pair(that.read(true), readlist());
+        }
+    };
+
+    // Returns the internal representation (a string, number, Pair, or
+    // EMPTYLIST) of the next expression in tokenizer, or EOF if there is no
+    // expression there.  If noeof is true, throws an exception instead of
+    // returning EOF.
+    this.read = function(noeof) {
+        var tok = tokenizer.get();
+
+        if (tok === EOF) {
+            if (noeof) {
+                tokenizer.mythrow("Unexpected end of input");
+            } else {
+                return EOF;
+            }
+        } else if (tok === "(") {
+            return readlist();
+        } else if (tok === ")") {
+            tokenizer.mythrow("Unexpected \")\"");
+        } else if (tok === "'") {
+            return new Pair("quote", new Pair(this.read(true), EMPTYLIST));
+        } else if (tok === ".") {
+            tokenizer.mythrow("Unexpected \".\"");
+        } else {
+            return tok;
+        }
+    };
 };
 
 var issymbol = function(x) {
@@ -945,7 +951,7 @@ var Model = function(view) {
     // Asynchronously evaluates the expressions in the given string and puts
     // the results in the output textarea:
     this.evl = function(str) {
-        var tokenizer = new Tokenizer(str);
+        var parser = new Parser(str);
 
         view.clear();
         this.setevalmode(true);
@@ -963,7 +969,7 @@ var Model = function(view) {
                     // run asynchronously.  Both thunks and continuations
                     // always return another thunk or nothing if there's
                     // nothing left to do.
-                    expr = read(tokenizer);
+                    expr = parser.read();
 
                     if (expr !== EOF) {
                         cont = function(val) {
@@ -973,7 +979,7 @@ var Model = function(view) {
                                 view.print(lisptostring(val));
                             }
 
-                            expr = read(tokenizer);
+                            expr = parser.read();
 
                             if (expr === EOF) {
                                 that.setevalmode(false);
