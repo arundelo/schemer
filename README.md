@@ -21,6 +21,7 @@ Features
 - Tail call elimination.
 - Lexical scope.
 - `'foo` syntax for `(quote foo)`.
+- Dotted lists.
 
   [letcc]: http://community.schemewiki.org/?seasoned-schemer
 
@@ -37,8 +38,6 @@ Lots of stuff to do:
 - Macros.  (It would be nice to implement `cond`, `call/cc`, `and`, etc. with
   these.)
 - Variadic functions.  (Probably with `(lambda args body)` syntax.)
-- Dotted lists.  (These are never used in *The Little Schemer*.  Maybe make
-  them optional?)
 - Double check that no calls in tail position unnecessarily allocate
   continuations.
 - Allow `lambda`, `letcc`, etc. to take multi-expression bodies.  (`cond`

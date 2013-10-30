@@ -175,11 +175,7 @@ Pair.prototype.toStringHelper = function() {
     } else if (this.cdr instanceof Pair) {
         return lisptostring(this.car) + " " + this.cdr.toStringHelper();
     } else {
-        // This implementation doesn't understand improper lists and should
-        // never produce them:
-        throw new Error(
-            "Not your fault: Improper list found: (" +
-                lisptostring(this.car) + " . " + lisptostring(this.cdr) + ")");
+        return lisptostring(this.car) + " . " + lisptostring(this.cdr) + ")";
     }
 };
 
@@ -209,12 +205,33 @@ Undeffed.prototype.toString = function() {
     return "#[undefined: " + this.source + "]";
 };
 
+// Returns the cdr of a dotted list whose dot has already been read.  (Dotted
+// lists are never used in The Little Schemer.  They break the Law of Cdr and
+// the Law of Cons.)
+var readdottedlistcdr = function(tokenizer) {
+    var expr, tok;
+
+    expr = read(tokenizer, true);
+    tok = tokenizer.get();
+    if (tok === EOF) {
+        tokenizer.mythrow("Unexpected end of input");
+    } else if (tok !== ")") {
+        tokenizer.mythrow("Malformed dotted list");
+    }
+
+    return expr;
+};
+
 // Returns the list whose open paren has already been read:
 var readlist = function(tokenizer) {
     var tok = tokenizer.get();
 
     if (tok === ")") {
         return EMPTYLIST;
+    } else if (tok === ".") {
+        // Note that accepting a dot here means that the degenerate dotted list
+        // case of "(. foo)" is valid.  It is read as "foo".
+        return readdottedlistcdr(tokenizer);
     } else {
         tokenizer.unget();
         return new Pair(read(tokenizer, true), readlist(tokenizer));
@@ -239,6 +256,8 @@ var read = function(tokenizer, noeof) {
         tokenizer.mythrow("Unexpected \")\"");
     } else if (tok === "'") {
         return new Pair("quote", new Pair(read(tokenizer, true), EMPTYLIST));
+    } else if (tok === ".") {
+        tokenizer.mythrow("Unexpected \".\"");
     } else {
         return tok;
     }
@@ -295,10 +314,6 @@ var builtins = {
             throw a.error("cons");
         } else if (d instanceof Undeffed) {
             throw d.error("cons");
-        } else if (!(d === EMPTYLIST || d instanceof Pair)) {
-            throw new Error(
-                "cons's second argument must be a list, not " +
-                    lisptostring(d));
         }
         return new Pair(a, d);
     },
