@@ -294,7 +294,7 @@ var Closure = function(lambdacdr, env) {
             this.mandatoryargnames[count++] = formals.car;
             formals = formals.cdr;
         } else {
-            throw new Error("Bad name in lambda: " + formals);
+            throw new Error("Bad name in lambda: " + lisptostring(formals));
         }
     }
 
