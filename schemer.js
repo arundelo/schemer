@@ -213,35 +213,32 @@ Undeffed.prototype.toString = function() {
 var readlist = function(tokenizer) {
     var tok = tokenizer.get();
 
-    if (tok === EOF) {
-        tokenizer.mythrow("Unexpected end of input");
-    } else if (tok === ")") {
+    if (tok === ")") {
         return EMPTYLIST;
     } else {
         tokenizer.unget();
-        return new Pair(read(tokenizer), readlist(tokenizer));
+        return new Pair(read(tokenizer, true), readlist(tokenizer));
     }
 };
 
 // Returns the internal representation (a string, number, Pair, or EMPTYLIST)
-// of the next expression in tokenizer, or EOF if there is no expression there:
-var read = function(tokenizer) {
-    var tok = tokenizer.get(),
-        expr;
+// of the next expression in tokenizer, or EOF if there is no expression there.
+// If noeof is true, throws an exception instead of returning EOF.
+var read = function(tokenizer, noeof) {
+    var tok = tokenizer.get();
 
     if (tok === EOF) {
-        return EOF;
+        if (noeof) {
+            tokenizer.mythrow("Unexpected end of input");
+        } else {
+            return EOF;
+        }
     } else if (tok === "(") {
         return readlist(tokenizer);
     } else if (tok === ")") {
         tokenizer.mythrow("Unexpected \")\"");
     } else if (tok === "'") {
-        expr = read(tokenizer);
-        if (expr === EOF) {
-            tokenizer.mythrow("Unexpected end of input");
-        }
-
-        return new Pair("quote", new Pair(expr, EMPTYLIST));
+        return new Pair("quote", new Pair(read(tokenizer, true), EMPTYLIST));
     } else {
         return tok;
     }
