@@ -111,6 +111,18 @@ textarea {font-family: monospace;}
          (loop)))
      (+ (current-milliseconds) (* secs 1000))
      'placeholder)))
+
+(define length
+  (lambda (l)
+    (if (null? l)
+      0
+      (add1 (length (cdr l))))))
+
+(define count-args
+  (lambda l
+    (length l)))
+
+(eq? (count-args 'one 'two 'three 'four) 4)
 </textarea>
 
 <p>

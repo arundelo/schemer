@@ -22,6 +22,8 @@ Features
 - Lexical scope.
 - `'foo` syntax for `(quote foo)`.
 - Dotted lists.
+- Variadic functions (using `(lambda args body)` syntax and
+  `(lambda (arg1 arg2 . restofargs) body)` syntax).
 
   [letcc]: http://community.schemewiki.org/?seasoned-schemer
 
@@ -37,7 +39,6 @@ Lots of stuff to do:
 - Separate syntax checker (so `eval`'s logic can be simpler).
 - Macros.  (It would be nice to implement `cond`, `call/cc`, `and`, etc. with
   these.)
-- Variadic functions.  (Probably with `(lambda args body)` syntax.)
 - Double check that no calls in tail position unnecessarily allocate
   continuations.
 - Allow `lambda`, `letcc`, etc. to take multi-expression bodies.  (`cond`

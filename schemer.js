@@ -263,12 +263,39 @@ var read = function(tokenizer, noeof) {
     }
 };
 
-var Closure = function(lambdacdr, env) {
-    this.formals = lambdacdr.car;
+var issymbol = function(x) {
+    return typeof x == "string";
+};
 
-    if (this.formals !== EMPTYLIST && !(this.formals instanceof Pair)) {
+var islist = function(x) {
+    return x === EMPTYLIST || x instanceof Pair;
+};
+
+var Closure = function(lambdacdr, env) {
+    var formals = lambdacdr.car,
+        count = 0;
+
+    if (!islist(formals) && !issymbol(formals)) {
         throw new Error(
-            "lambda's second argument must be a list, not " + formals);
+            "lambda's second argument must be a list or a symbol, not " +
+                formals);
+    }
+
+    this.mandatoryargnames = [];
+
+    while (formals !== EMPTYLIST) {
+        if (issymbol(formals)) {
+            this.restargname = formals;
+            formals = EMPTYLIST;
+        } else if (formals instanceof Pair) {
+            if (!issymbol(formals.car)) {
+                throw new Error("Bad name in lambda: " + formals.car);
+            }
+            this.mandatoryargnames[count++] = formals.car;
+            formals = formals.cdr;
+        } else {
+            throw new Error("Bad name in lambda: " + formals);
+        }
     }
 
     this.body = lambdacdr.cdr.car;
@@ -663,19 +690,24 @@ var evlis = function(exprs, env, cont) {
 // result:
 var apply = function(fn, args, cont) {
     if (fn instanceof Closure) {
-        var formals = fn.formals,
-            applymap = {};
+        var mandatoryargnames = fn.mandatoryargnames,
+            applymap = {},
+            i;
 
-        while (formals !== EMPTYLIST && args !== EMPTYLIST) {
-            applymap[formals.car] = args.car;
-            formals = formals.cdr;
+        for (i = 0; i < mandatoryargnames.length; i++) {
+            if (args === EMPTYLIST) {
+                throw new Error("Not enough arguments");
+            } else if (!(args instanceof Pair)) {
+                throw new Error("Improper (dotted) argument list");
+            }
+            applymap[mandatoryargnames[i]] = args.car;
             args = args.cdr;
         }
 
-        if (args !== EMPTYLIST) {
+        if (fn.restargname !== undefined) {
+            applymap[fn.restargname] = args;
+        } else if (args !== EMPTYLIST) {
             throw new Error("Too many arguments");
-        } else if (formals !== EMPTYLIST) {
-            throw new Error("Not enough arguments");
         }
 
         return function() {
