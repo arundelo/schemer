@@ -32,11 +32,10 @@ textarea {font-family: monospace;}
 ((lambda (a b)
    (list
      ((lambda (b c)
-        (begin
-          (set! a 'out)
-          (set! b 'in)
-          (set! c 'in)
-          (list 'inside a b c)))
+        (set! a 'out)
+        (set! b 'in)
+        (set! c 'in)
+        (list 'inside a b c))
       'inbefore 'inbefore)
      (list 'outside a b)))
  'outbefore 'outbefore)
@@ -61,17 +60,16 @@ textarea {font-family: monospace;}
 (letcc cc (jump42 '(1 2 3 42 43) cc))
 
 ((lambda (n outercont)
-   (begin
-     ; Grab a continuation and give it a name in a containing scope:
-     (letcc innercont
-            (set! outercont innercont))
-     ;(alert 'letcc 'just 'returned 'and 'n 'is n)
-     (set! n (+ 1 n))
-     (if (eq? n 10)
-       n
-       ; Call the continuation again so letcc will return again, after
-       ; which n will be incremented again:
-       (outercont #f))))
+   ; Grab a continuation and give it a name in a containing scope:
+   (letcc innercont
+          (set! outercont innercont))
+   ;(alert 'letcc 'just 'returned 'and 'n 'is n)
+   (set! n (+ 1 n))
+   (if (eq? n 10)
+     n
+     ; Call the continuation again so letcc will return again, after
+     ; which n will be incremented again:
+     (outercont #f)))
  0 #f)
 
 ;; Continuation test -- make sure that when a continuation is called the
@@ -102,13 +100,12 @@ textarea {font-family: monospace;}
 (define busy-wait
   (lambda (secs)
     ((lambda (stop-milliseconds loop)
-       (begin
-         (set! loop
-           (lambda ()
-             (if (&gt; (current-milliseconds) stop-milliseconds)
-               'done
-               (loop))))
-         (loop)))
+       (set! loop
+         (lambda ()
+           (if (&gt; (current-milliseconds) stop-milliseconds)
+             'done
+             (loop))))
+       (loop))
      (+ (current-milliseconds) (* secs 1000))
      'placeholder)))
 

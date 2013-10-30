@@ -278,8 +278,29 @@ var islist = function(x) {
 };
 
 var Closure = function(lambdacdr, env) {
-    var formals = lambdacdr.car,
-        count = 0;
+    var count = 0,
+        formals;
+
+    if (!(lambdacdr instanceof Pair)) {
+        throw new Error("Malformed lambda; cdr is " + lisptostring(lambdacdr));
+    }
+
+    formals = lambdacdr.car;
+    // Here, body is a list of expressions; see below where it is transformed
+    // to one expression:
+    this.body = lambdacdr.cdr;
+
+    if (!(this.body instanceof Pair)) {
+        throw new Error(
+            "Malformed lambda; body is " + lisptostring(this.body));
+    }
+
+    // Somewhat klugey way of implementing multi-expression lambda bodies:
+    if (this.body.cdr !== EMPTYLIST) {
+        this.body = new Pair("begin", this.body);
+    } else {
+        this.body = this.body.car;
+    }
 
     this.mandatoryargnames = [];
 
@@ -298,7 +319,6 @@ var Closure = function(lambdacdr, env) {
         }
     }
 
-    this.body = lambdacdr.cdr.car;
     this.env = env;
 };
 
@@ -490,13 +510,9 @@ var operators = {
     },
 
     lambda: function(args, env, cont) {
-        if (lengthbetween(args, 2, 2)) {
-            return function() {
-                return cont(new Closure(args, env));
-            };
-        } else {
-            throw new Error("lambda must take exactly two arguments");
-        }
+        return function() {
+            return cont(new Closure(args, env));
+        };
     },
 
     letcc: function(args, env, cont) {
@@ -551,12 +567,15 @@ var operators = {
     },
 
     begin: function(args, env, cont) {
-        if (args === EMPTYLIST) {
-            throw new Error("begin needs at least one argument");
-        }
-
         var beginhelper = function beginhelper(args) {
             return function() {
+                if (args === EMPTYLIST) {
+                    throw new Error("begin needs at least one argument");
+                } else if (!(args instanceof Pair)) {
+                    throw new Error(
+                        "Malformed begin; last cdr is " + lisptostring(args));
+                }
+
                 if (args.cdr == EMPTYLIST) {
                     // We are at the end; evaluate and return the last value.
                     return evl(args.car, env, cont);
