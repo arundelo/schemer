@@ -372,6 +372,10 @@ var builtins = {
         return args.car !== EMPTYLIST && !(args.car instanceof Pair);
     },
 
+    "pair?": function builtin_pair(args) {
+        return args.car instanceof Pair;
+    },
+
     "<": function builtin_lt(args) {
         return args.car < args.cdr.car;
     },
