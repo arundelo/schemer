@@ -673,9 +673,9 @@ var apply = function(fn, args, cont) {
         }
 
         if (args !== EMPTYLIST) {
-            throw new Error("Not enough arguments");
-        } else if (formals !== EMPTYLIST) {
             throw new Error("Too many arguments");
+        } else if (formals !== EMPTYLIST) {
+            throw new Error("Not enough arguments");
         }
 
         return function() {
