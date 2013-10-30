@@ -281,12 +281,6 @@ var Closure = function(lambdacdr, env) {
     var formals = lambdacdr.car,
         count = 0;
 
-    if (!islist(formals) && !issymbol(formals)) {
-        throw new Error(
-            "lambda's first argument must be a list or a symbol, not " +
-                formals);
-    }
-
     this.mandatoryargnames = [];
 
     while (formals !== EMPTYLIST) {
