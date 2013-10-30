@@ -211,8 +211,7 @@ Undeffed.prototype.toString = function() {
 
 // Returns the list whose open paren has already been read:
 var readlist = function(tokenizer) {
-    var tok = tokenizer.get(),
-        car;
+    var tok = tokenizer.get();
 
     if (tok === EOF) {
         tokenizer.mythrow("Unexpected end of input");
@@ -220,8 +219,7 @@ var readlist = function(tokenizer) {
         return EMPTYLIST;
     } else {
         tokenizer.unget();
-        car = read(tokenizer);
-        return new Pair(car, readlist(tokenizer));
+        return new Pair(read(tokenizer), readlist(tokenizer));
     }
 };
 
