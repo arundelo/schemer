@@ -48,6 +48,7 @@ Lots of stuff to do:
   variables that would be in scope if they weren't shadowed.
 - Scheme semantics for [internal `define`
   expressions](http://www.scheme.com/tspl3/binding.html#./binding:s15)?
+- Bignums.  Rationals too?  (*The Little Schemer* uses only whole numbers.)
 - Clean up code.
 - Various other FIXMEs (see source code).
 
