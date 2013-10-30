@@ -606,7 +606,8 @@ var operators = {
     },
 
     // apply is an operator rather than a builtin so it won't grow the
-    // JavaScript stack:
+    // JavaScript stack.  FIXME: apply should be able to take more args, like
+    // so: "(apply f arg1 arg2 restofargs)".
     apply: function(args, env, cont) {
         if (args === EMPTYLIST || args.cdr === EMPTYLIST ||
             args.cdr.cdr !== EMPTYLIST
